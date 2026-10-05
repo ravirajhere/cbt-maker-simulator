@@ -5,86 +5,57 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>JEE Main CBT Simulator</title>
 <link rel="stylesheet" href="css/style.css" />
-
-<!-- PDF.js for PDF rendering -->
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
-
-<!-- KaTeX for math rendering -->
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 </head>
 <body>
 
-<!-- ==================================================================
-     SCREEN 1: HOME — Upload PDF / Load Saved Test / Import
-     ================================================================== -->
+<!-- ================= SCREEN 1: HOME ================= -->
 <div id="homeScreen" class="screen active">
-
   <div class="app-header">
     <div class="app-logo">📝 JEE Main CBT Simulator</div>
     <div class="app-sub">Upload any question paper PDF → Crop → Practice in NTA-style CBT</div>
   </div>
 
   <div class="home-body">
-
-    <!-- New Test -->
     <div class="home-card">
       <h2>➕ Create New Test</h2>
       <p class="card-desc">Upload your question paper PDF. Crop questions visually. Take a full CBT-style mock test.</p>
-
-      <label for="pdfUpload" class="upload-btn">
-        📄 Upload PDF
-      </label>
+      <label for="pdfUpload" class="upload-btn">📄 Upload PDF</label>
       <input type="file" id="pdfUpload" accept="application/pdf" hidden />
-
       <p id="uploadedFileName" class="file-name"></p>
-
       <hr class="card-divider" />
-
       <h3 class="card-subtitle">📥 Import a Shared Test</h3>
-      <p class="card-desc-sm">Received a <code>.cbt.json</code> file from a friend? Import it to practice.</p>
-
-      <label for="importFile" class="import-btn">
-        📂 Import Test File
-      </label>
+      <p class="card-desc-sm">Received a <code>.cbt.json</code> file? Import it to practice.</p>
+      <label for="importFile" class="import-btn">📂 Import Test File</label>
       <input type="file" id="importFile" accept=".json,.cbt.json,application/json" hidden />
     </div>
 
-    <!-- Saved Tests -->
     <div class="home-card">
       <h2>📂 Saved Tests</h2>
       <p class="card-desc">Previously created tests appear below. Tap to resume or edit.</p>
-
       <div id="savedTestsList" class="saved-list">
         <p class="empty-msg">No saved tests yet.</p>
       </div>
     </div>
-
   </div>
 
-  <div class="app-footer">
-    🔒 All data stays on your device · No uploads · No tracking
-  </div>
+  <div class="app-footer">🔒 All data stays on your device · No uploads · No tracking</div>
 </div>
 
-<!-- ==================================================================
-     SCREEN 2: PDF VIEWER + CROP TOOL
-     ================================================================== -->
+<!-- ================= SCREEN 2: CROP ================= -->
 <div id="cropScreen" class="screen">
-
-  <!-- Top toolbar -->
   <div class="tool-bar">
     <div class="tool-left">
       <button class="btn-tool" onclick="goToHome()">← Back</button>
       <span class="file-label" id="cropFileName">paper.pdf</span>
     </div>
     <div class="tool-center">
-      <button class="btn-tool" onclick="prevPage()" title="Previous page">◀ Prev</button>
-      <span class="page-indicator">
-        Page <span id="currentPage">1</span> / <span id="totalPages">1</span>
-      </span>
-      <button class="btn-tool" onclick="nextPage()" title="Next page">Next ▶</button>
+      <button class="btn-tool" onclick="prevPage()">◀ Prev</button>
+      <span class="page-indicator">Page <span id="currentPage">1</span> / <span id="totalPages">1</span></span>
+      <button class="btn-tool" onclick="nextPage()">Next ▶</button>
     </div>
     <div class="tool-right">
       <span class="crop-count">Cropped: <strong id="cropCount">0</strong></span>
@@ -92,18 +63,13 @@
     </div>
   </div>
 
-  <!-- Crop body -->
   <div class="crop-body">
-
-    <!-- PDF Canvas -->
     <div class="pdf-viewer" id="pdfViewer">
       <canvas id="pdfCanvas"></canvas>
       <div id="cropOverlay" class="crop-overlay" style="display:none;"></div>
     </div>
 
-    <!-- Side panel -->
     <div class="crop-side-panel">
-
       <h3>📋 Crop Settings</h3>
       <p class="panel-hint">Drag on the PDF to select a question. Then click Save.</p>
 
@@ -123,32 +89,20 @@
       <label for="cropQNumber">Question Number</label>
       <input type="number" id="cropQNumber" min="1" max="30" value="1" />
 
-      <button class="btn-save-crop" id="saveCropBtn" onclick="saveCurrentCrop()" disabled>
-        ✅ Save This Crop
-      </button>
-
-      <button class="btn-undo" onclick="undoLastCrop()" title="Ctrl+Z">
-        ↩️ Undo Last Crop
-      </button>
+      <button class="btn-save-crop" id="saveCropBtn" onclick="saveCurrentCrop()" disabled>✅ Save This Crop</button>
+      <button class="btn-undo" onclick="undoLastCrop()" title="Ctrl+Z">↩️ Undo Last Crop</button>
 
       <hr />
-
       <h4>Recent Crops</h4>
       <div id="recentCrops" class="recent-crops">
         <p class="empty-msg">No crops yet.</p>
       </div>
-
     </div>
-
   </div>
-
 </div>
 
-<!-- ==================================================================
-     SCREEN 3: REVIEW + ANSWER KEY
-     ================================================================== -->
+<!-- ================= SCREEN 3: REVIEW ================= -->
 <div id="reviewScreen" class="screen">
-
   <div class="tool-bar">
     <div class="tool-left">
       <button class="btn-tool" onclick="goToCrop()">← Back to Crop</button>
@@ -161,24 +115,15 @@
   </div>
 
   <div class="review-body">
-
     <div class="review-header">
       <p>Set the correct answer for each question below. Click an option for MCQ, or type the value for Numerical.</p>
     </div>
-
-    <div id="reviewList" class="review-list">
-      <!-- JS fills this -->
-    </div>
-
+    <div id="reviewList" class="review-list"></div>
   </div>
-
 </div>
 
-<!-- ==================================================================
-     SCREEN 4: TEST CONFIGURATION
-     ================================================================== -->
+<!-- ================= SCREEN 4: CONFIG ================= -->
 <div id="configScreen" class="screen">
-
   <div class="tool-bar">
     <div class="tool-left">
       <button class="btn-tool" onclick="goToReview()">← Back to Review</button>
@@ -196,9 +141,7 @@
       <label for="configDuration">Duration (minutes)</label>
       <input type="number" id="configDuration" value="180" min="10" max="300" />
 
-      <div class="config-summary" id="configSummary">
-        <!-- JS fills -->
-      </div>
+      <div class="config-summary" id="configSummary"></div>
 
       <div class="config-actions">
         <button class="btn-secondary-tool" onclick="goToReview()">Cancel</button>
@@ -206,24 +149,18 @@
       </div>
 
       <hr class="card-divider" />
-
       <h4>💾 Save & Share</h4>
       <p class="panel-hint">Save this test locally, or export it to share with friends.</p>
-
       <div class="config-btn-row">
         <button class="btn-save-test" onclick="saveTestToLocal()">💾 Save Test</button>
         <button class="btn-export-test" onclick="exportTestAsFile()">📤 Export (.cbt.json)</button>
       </div>
     </div>
   </div>
-
 </div>
 
-<!-- ==================================================================
-     SCREEN 5: INSTRUCTIONS (NTA-style)
-     ================================================================== -->
+<!-- ================= SCREEN 5: INSTRUCTIONS ================= -->
 <div id="instructionsScreen" class="screen">
-
   <div class="nta-header small">
     <div class="header-left">
       <div class="logo-mini">Ministry of Education</div>
@@ -233,9 +170,7 @@
       <div class="nta-title-small">GENERAL INSTRUCTIONS</div>
     </div>
     <div class="header-right">
-      <select class="lang-select">
-        <option>English</option>
-      </select>
+      <select class="lang-select"><option>English</option></select>
     </div>
   </div>
 
@@ -247,7 +182,6 @@
 
   <div class="instr-body">
     <div class="instr-text" id="instrText">
-
       <p class="instr-title">Please read the instructions carefully</p>
 
       <h4>General Instructions:</h4>
@@ -265,7 +199,7 @@
           <p class="small-note">The Marked for Review status for a question simply indicates that you would like to look at that question again.</p>
         </li>
         <li>You can click on your "Profile" image on the top right corner of your screen to change the language during the exam for the entire question paper.</li>
-        <li>You can click on the ">" arrow which appears to the left of the question palette to collapse the question palette thereby maximizing the question window. To view the question palette again, you can click on "<" which appears on the right side of the question window.</li>
+        <li>You can click on the ">" arrow which appears to the left of the question palette to collapse the question palette thereby maximizing the question window.</li>
         <li>You can click on the up-arrow to navigate to the top of the question area, without scrolling.</li>
       </ol>
 
@@ -314,7 +248,6 @@
 
       <p><strong>a)</strong> The full paper can be viewed by clicking the "Question Paper" icon on the top right corner of the screen.</p>
       <p><strong>b)</strong> Blank Sheets for doing Rough Work / Calculations shall be provided to the candidates. All calculations writing work is to be done only in the Blank Sheets provided at the Centre in the Examination Room / Hall.</p>
-
     </div>
 
     <div class="instr-sidebar">
@@ -335,128 +268,143 @@
   <div class="nta-footer">© Practice Tool · Not affiliated with NTA</div>
 </div>
 
-<!-- ==================================================================
-     SCREEN 6: CBT TEST
-     ================================================================== -->
+<!-- ================= SCREEN 6: TEST (REAL NTA LAYOUT) ================= -->
 <div id="testScreen" class="screen">
 
-  <!-- Top Info Bar -->
-  <div class="test-info-bar">
-    <div class="info-photo">👤</div>
-    <div class="info-text">
-      <p><strong>Candidate Name :</strong> Demo Student</p>
-      <p><strong>Exam Name :</strong> JEE Main — Practice</p>
-      <p><strong>Test Name :</strong> <span id="cbtTestName">—</span></p>
-      <p><strong>Remaining Time :</strong> <span id="timerDisplay" class="timer-badge">03:00:00</span></p>
+  <!-- ROW 1: Candidate Info + Timer -->
+  <div class="nta-top-bar">
+    <div class="nta-candidate-info">
+      <div class="nta-photo">👤</div>
+      <div class="nta-cand-details">
+        <div class="nta-cand-name">Demo Student</div>
+        <div class="nta-cand-sub">Roll No: 1234567890</div>
+      </div>
     </div>
-    <div class="lang-top">
-      <select class="lang-select">
-        <option>English</option>
-      </select>
+    <div class="nta-subject-name" id="cbtTestName">JEE Main — Practice</div>
+    <div class="nta-timer-wrap">
+      <span class="nta-timer-label">Time Left:</span>
+      <span class="nta-timer-value" id="timerDisplay">03:00:00</span>
     </div>
   </div>
 
-  <!-- Section Tabs -->
-  <div class="section-tabs-bar">
-    <button class="section-tab active" data-subject="Physics" onclick="switchSubject('Physics')">Physics</button>
-    <button class="section-tab" data-subject="Chemistry" onclick="switchSubject('Chemistry')">Chemistry</button>
-    <button class="section-tab" data-subject="Mathematics" onclick="switchSubject('Mathematics')">Mathematics</button>
+  <!-- ROW 2: Section Tabs -->
+  <div class="nta-section-bar">
+    <div class="nta-section-tabs">
+      <button class="nta-section-tab active" data-subject="Physics" onclick="switchSubject('Physics')">PHYSICS</button>
+      <button class="nta-section-tab" data-subject="Chemistry" onclick="switchSubject('Chemistry')">CHEMISTRY</button>
+      <button class="nta-section-tab" data-subject="Mathematics" onclick="switchSubject('Mathematics')">MATHEMATICS</button>
+    </div>
   </div>
 
-  <!-- Test Content -->
-  <div class="test-content">
+  <!-- Main Content -->
+  <div class="nta-main-content">
 
     <!-- Question Area -->
-    <div class="question-box">
-
-      <div class="q-header">
-        <span>Question <span id="qNumber">1</span> of <span id="qTotal">25</span>:</span>
-        <span class="q-type-badge" id="qTypeBadge">MCQ</span>
-      </div>
-
-      <!-- Question Image -->
-      <div class="q-image-wrap">
-        <img id="questionImage" src="" alt="Question" />
-      </div>
-
-      <!-- MCQ Options -->
-      <div class="options-list" id="optionsList">
-        <!-- JS fills -->
-      </div>
-
-      <!-- Numerical Keypad -->
-      <div class="keypad-wrap" id="keypadWrap" style="display:none;">
-        <p class="keypad-hint">Use the on-screen keypad to enter your answer:</p>
-        <input type="text" id="numInput" readonly />
-        <div class="keypad">
-          <button onclick="keypad('1')">1</button>
-          <button onclick="keypad('2')">2</button>
-          <button onclick="keypad('3')">3</button>
-          <button onclick="keypad('4')">4</button>
-          <button onclick="keypad('5')">5</button>
-          <button onclick="keypad('6')">6</button>
-          <button onclick="keypad('7')">7</button>
-          <button onclick="keypad('8')">8</button>
-          <button onclick="keypad('9')">9</button>
-          <button onclick="keypad('0')">0</button>
-          <button onclick="keypad('-')">−</button>
-          <button onclick="keypad('.')">.</button>
-          <button onclick="backspace()">⌫</button>
-          <button onclick="clearNum()">Clear</button>
+    <div class="nta-question-area">
+      <div class="nta-question-header">
+        <div class="nta-q-number">Question No. <span id="qNumber">1</span></div>
+        <div class="nta-q-info">
+          <span class="nta-q-type" id="qTypeBadge">MCQ</span>
+          <span class="nta-q-marks">Marks: <strong>+4</strong> / <strong>−1</strong></span>
         </div>
       </div>
 
+      <div class="nta-question-body">
+        <div class="q-image-wrap">
+          <img id="questionImage" src="" alt="Question" />
+        </div>
+
+        <!-- MCQ Options (Radio Style) -->
+        <div class="nta-options-list" id="optionsList"></div>
+
+        <!-- Numerical Keypad -->
+        <div class="nta-keypad-wrap" id="keypadWrap" style="display:none;">
+          <p class="nta-keypad-hint">Use the on-screen keypad to enter your answer:</p>
+          <input type="text" id="numInput" readonly />
+          <div class="nta-keypad">
+            <button onclick="keypad('1')">1</button>
+            <button onclick="keypad('2')">2</button>
+            <button onclick="keypad('3')">3</button>
+            <button onclick="keypad('4')">4</button>
+            <button onclick="keypad('5')">5</button>
+            <button onclick="keypad('6')">6</button>
+            <button onclick="keypad('7')">7</button>
+            <button onclick="keypad('8')">8</button>
+            <button onclick="keypad('9')">9</button>
+            <button onclick="keypad('0')">0</button>
+            <button onclick="keypad('-')">−</button>
+            <button onclick="keypad('.')">.</button>
+            <button onclick="backspace()">⌫</button>
+            <button onclick="clearNum()">Clear</button>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- Palette -->
-    <div class="palette-panel">
-      <div class="palette-panel-title">Question Palette</div>
-      <div class="palette-legend-row">
-        <div><span class="lg-box grey" id="cntNotVisited">0</span> Not Visited</div>
-        <div><span class="lg-box orange" id="cntNotAnswered">0</span> Not Answered</div>
-        <div><span class="lg-box green" id="cntAnswered">0</span> Answered</div>
-        <div><span class="lg-box purple" id="cntMarked">0</span> Marked for Review</div>
-        <div><span class="lg-box purple-tick" id="cntMarkedAns">0</span> Answered &amp; Marked</div>
+    <!-- Palette Panel -->
+    <div class="nta-palette-panel">
+      <div class="nta-palette-header">
+        <div class="nta-palette-title" id="paletteTitle">Physics — Section A</div>
+        <div class="nta-palette-sub" id="paletteSubtitle">Choose a Question</div>
       </div>
-      <div class="palette-grid" id="paletteGrid"></div>
+
+      <div class="nta-legend">
+        <div class="nta-legend-item">
+          <span class="nta-legend-shape not-visited"></span>
+          <span class="nta-legend-count" id="cntNotVisited">0</span>
+          <span class="nta-legend-text">Not Visited</span>
+        </div>
+        <div class="nta-legend-item">
+          <span class="nta-legend-shape not-answered"></span>
+          <span class="nta-legend-count" id="cntNotAnswered">0</span>
+          <span class="nta-legend-text">Not Answered</span>
+        </div>
+        <div class="nta-legend-item">
+          <span class="nta-legend-shape answered"></span>
+          <span class="nta-legend-count" id="cntAnswered">0</span>
+          <span class="nta-legend-text">Answered</span>
+        </div>
+        <div class="nta-legend-item">
+          <span class="nta-legend-shape marked"></span>
+          <span class="nta-legend-count" id="cntMarked">0</span>
+          <span class="nta-legend-text">Marked for Review</span>
+        </div>
+        <div class="nta-legend-item">
+          <span class="nta-legend-shape answered-marked"></span>
+          <span class="nta-legend-count" id="cntMarkedAns">0</span>
+          <span class="nta-legend-text">Answered &amp; Marked for Review<br><small>(will be considered for evaluation)</small></span>
+        </div>
+      </div>
+
+      <div class="nta-palette-grid" id="paletteGrid"></div>
     </div>
 
   </div>
 
   <!-- Bottom Buttons -->
-  <div class="test-bottom">
-    <div class="bottom-row1">
-      <button class="btn-green" onclick="saveAndNext()" title="Save answer and move to next question">SAVE &amp; NEXT</button>
-      <button class="btn-grey" onclick="clearResponse()" title="Clear your response">CLEAR</button>
-      <button class="btn-orange" onclick="saveAndMark()" title="Save answer and mark for review">SAVE &amp; MARK FOR REVIEW</button>
-      <button class="btn-blue" onclick="markAndNext()" title="Mark for review without saving">MARK FOR REVIEW &amp; NEXT</button>
+  <div class="nta-bottom-bar">
+    <div class="nta-bottom-left">
+      <button class="nta-btn-submit" onclick="confirmSubmit()">SUBMIT</button>
     </div>
-    <div class="bottom-row2">
-      <button class="btn-nav" onclick="prevQ()">&lt;&lt; BACK</button>
-      <button class="btn-nav" onclick="nextQ()">NEXT &gt;&gt;</button>
-      <button class="btn-submit" onclick="confirmSubmit()">SUBMIT</button>
+    <div class="nta-bottom-right">
+      <button class="nta-btn-save" onclick="saveAndNext()">SAVE &amp; NEXT</button>
+      <button class="nta-btn-clear" onclick="clearResponse()">CLEAR</button>
+      <button class="nta-btn-mark" onclick="saveAndMark()">SAVE &amp; MARK FOR REVIEW</button>
+      <button class="nta-btn-mark-next" onclick="markAndNext()">MARK FOR REVIEW &amp; NEXT</button>
+      <button class="nta-btn-back" onclick="prevQ()">&lt;&lt; BACK</button>
+      <button class="nta-btn-next" onclick="nextQ()">NEXT &gt;&gt;</button>
     </div>
   </div>
-
-  <div class="nta-footer">© Practice Tool · Not affiliated with NTA</div>
 </div>
 
-<!-- ==================================================================
-     SCREEN 7: RESULT
-     ================================================================== -->
+<!-- ================= SCREEN 7: RESULT ================= -->
 <div id="resultScreen" class="screen">
-
   <div class="tool-bar">
-    <div class="tool-left">
-      <span class="file-label">📊 Test Result</span>
-    </div>
-    <div class="tool-right">
-      <button class="btn-tool" onclick="goToHome()">← Home</button>
-    </div>
+    <div class="tool-left"><span class="file-label">📊 Test Result</span></div>
+    <div class="tool-right"><button class="btn-tool" onclick="goToHome()">← Home</button></div>
   </div>
 
   <div class="result-body">
-
     <div class="result-summary">
       <h2 id="resultTestName">—</h2>
       <div class="score-big">
@@ -490,18 +438,12 @@
           <th>Score</th>
         </tr>
       </thead>
-      <tbody id="resultTableBody">
-        <!-- JS fills -->
-      </tbody>
+      <tbody id="resultTableBody"></tbody>
     </table>
-
   </div>
-
 </div>
 
-<!-- ==================================================================
-     POPUP: SUBMIT CONFIRMATION
-     ================================================================== -->
+<!-- ================= POPUPS ================= -->
 <div id="submitPopup" class="popup">
   <div class="popup-content">
     <h3>Confirm Submission</h3>
@@ -513,9 +455,6 @@
   </div>
 </div>
 
-<!-- ==================================================================
-     POPUP: GENERAL INFO / WARNING
-     ================================================================== -->
 <div id="infoPopup" class="popup">
   <div class="popup-content">
     <h3 id="infoTitle">Info</h3>
@@ -526,9 +465,6 @@
   </div>
 </div>
 
-<!-- ==================================================================
-     SCRIPTS — Load order matters!
-     ================================================================== -->
 <script src="js/storage.js"></script>
 <script src="js/pdfUpload.js"></script>
 <script src="js/crop.js"></script>
