@@ -1,17 +1,16 @@
 /* ==================================================================
-   JEE CBT MAKER — CBT Test Engine
-   Sections, palette, timer, keypad, submit, result
+   JEE CBT MAKER — CBT Test Engine (NTA Layout)
    ================================================================== */
 
 /* ============ CBT STATE ============ */
 const CBTState = {
   testName: 'JEE Main Practice',
-  duration: 180 * 60,      // seconds
+  duration: 180 * 60,
   timeLeft: 180 * 60,
   timerInterval: null,
   warned30: false,
+  warned5: false,
 
-  // Section-wise question sets
   sections: {
     Physics: [],
     Chemistry: [],
@@ -20,20 +19,16 @@ const CBTState = {
 
   currentSubject: 'Physics',
   currentIdx: 0,
-
   isActive: false
 };
 
 /* ==================================================================
-   START CBT — Called from config screen
+   CONFIG → INSTRUCTIONS
    ================================================================== */
-function startCBT() {
-  // Get config
-  const testName = (document.getElementById('configTestName')?.value || '').trim() || 'JEE Main Practice';
-  const durationMin = parseInt(document.getElementById('configDuration')?.value) || 180;
+function goToInstructions() {
+  // Validation: answers must be set
+  const validation = validateAllAnswers ? validateAllAnswers() : { valid: true };
 
-  // Validate answers are set
-  const validation = validateAllAnswers();
   if (!validation.valid) {
     showInfoPopup(
       `${validation.missing} question(s) ka answer set nahi hua.<br><br>${validation.details.slice(0, 5).join('<br>')}${validation.details.length > 5 ? '<br>...' : ''}`,
@@ -42,6 +37,35 @@ function startCBT() {
     return;
   }
 
+  // Set test name on instructions banner
+  const nameInput = document.getElementById('configTestName');
+  const name = (nameInput?.value || '').trim() || 'JEE Main Practice';
+  const nameEl = document.getElementById('selectedPaperName');
+  if (nameEl) nameEl.textContent = name;
+
+  // Store in AppState
+  AppState.testConfig.name = name;
+  AppState.testConfig.duration = parseInt(document.getElementById('configDuration')?.value) || 180;
+
+  // Reset checkbox + button
+  const chk = document.getElementById('agreeCheck');
+  const btn = document.getElementById('readyBtn');
+  if (chk) chk.checked = false;
+  if (btn) btn.disabled = true;
+
+  showScreen('instructionsScreen');
+}
+
+function toggleReadyBtn() {
+  const chk = document.getElementById('agreeCheck');
+  const btn = document.getElementById('readyBtn');
+  if (chk && btn) btn.disabled = !chk.checked;
+}
+
+/* ==================================================================
+   START TEST — From instructions screen "I am ready to begin"
+   ================================================================== */
+function startTest() {
   // Build sections from crops
   CBTState.sections = { Physics: [], Chemistry: [], Mathematics: [] };
 
@@ -68,7 +92,6 @@ function startCBT() {
     });
   });
 
-  // Check total questions
   const total = Object.values(CBTState.sections).reduce((s, arr) => s + arr.length, 0);
   if (total === 0) {
     showInfoPopup('Koi question nahi hai test ke liye.', 'Empty');
@@ -76,10 +99,11 @@ function startCBT() {
   }
 
   // Set state
-  CBTState.testName = testName;
-  CBTState.duration = durationMin * 60;
-  CBTState.timeLeft = durationMin * 60;
+  CBTState.testName = AppState.testConfig.name || 'JEE Main Practice';
+  CBTState.duration = (AppState.testConfig.duration || 180) * 60;
+  CBTState.timeLeft = CBTState.duration;
   CBTState.warned30 = false;
+  CBTState.warned5 = false;
   CBTState.isActive = true;
 
   // Find first non-empty subject
@@ -88,14 +112,14 @@ function startCBT() {
   ) || 'Physics';
   CBTState.currentIdx = 0;
 
-  // Update UI
+  // Update UI — test name
   const nameEl = document.getElementById('cbtTestName');
-  if (nameEl) nameEl.textContent = testName;
+  if (nameEl) nameEl.textContent = CBTState.testName;
 
-  // Switch to test screen
+  // Show test screen
   showScreen('testScreen');
 
-  // Update section tabs (show only non-empty subjects)
+  // Render section tabs
   renderSectionTabs();
 
   // Render first question
@@ -104,35 +128,28 @@ function startCBT() {
   // Start timer
   startCBTTimer();
 
-  console.log(`🚀 CBT started: ${testName} · ${total} questions · ${durationMin} min`);
+  console.log(`🚀 CBT started: ${CBTState.testName} · ${total} questions`);
 }
 
 /* ==================================================================
-   RENDER SECTION TABS
+   SECTION TABS
    ================================================================== */
 function renderSectionTabs() {
-  const bar = document.querySelector('.section-tabs-bar');
-  if (!bar) return;
-
   const subjects = ['Physics', 'Chemistry', 'Mathematics'];
-  bar.innerHTML = '';
-
-  subjects.forEach(subj => {
+  document.querySelectorAll('.nta-section-tab').forEach(tab => {
+    const subj = tab.dataset.subject;
     const count = CBTState.sections[subj]?.length || 0;
-    if (count === 0) return;   // skip empty sections
 
-    const btn = document.createElement('button');
-    btn.className = 'section-tab' + (subj === CBTState.currentSubject ? ' active' : '');
-    btn.textContent = `${subj} (${count})`;
-    btn.dataset.subject = subj;
-    btn.addEventListener('click', () => switchSubject(subj));
-    bar.appendChild(btn);
+    if (count === 0) {
+      tab.style.display = 'none';
+    } else {
+      tab.style.display = '';
+      tab.textContent = `${subj.toUpperCase()} (${count})`;
+      tab.classList.toggle('active', subj === CBTState.currentSubject);
+    }
   });
 }
 
-/* ==================================================================
-   SWITCH SUBJECT
-   ================================================================== */
 function switchSubject(subject) {
   if (subject === CBTState.currentSubject) return;
   if (!CBTState.sections[subject] || CBTState.sections[subject].length === 0) return;
@@ -140,15 +157,12 @@ function switchSubject(subject) {
   CBTState.currentSubject = subject;
   CBTState.currentIdx = 0;
 
-  // Update tabs
-  document.querySelectorAll('.section-tab').forEach(t => {
+  document.querySelectorAll('.nta-section-tab').forEach(t => {
     t.classList.toggle('active', t.dataset.subject === subject);
   });
 
   renderCBTQuestion();
   renderCBTPalette();
-
-  console.log(`📑 Switched to ${subject}`);
 }
 
 /* ==================================================================
@@ -156,26 +170,28 @@ function switchSubject(subject) {
    ================================================================== */
 function renderCBTQuestion() {
   const questions = CBTState.sections[CBTState.currentSubject];
-  if (!questions || questions.length === 0) {
-    showInfoPopup('Is section mein koi question nahi hai.', 'Empty');
-    return;
-  }
+  if (!questions || questions.length === 0) return;
 
   const q = questions[CBTState.currentIdx];
   if (!q) return;
 
-  // Mark as visited
   if (q.status === 'not-visited') q.status = 'not-answered';
 
-  // Header info
+  // Header
   const qNumEl = document.getElementById('qNumber');
-  const qTotalEl = document.getElementById('qTotal');
   if (qNumEl) qNumEl.textContent = q.qNumber;
-  if (qTotalEl) qTotalEl.textContent = questions.length;
 
   const qTypeBadge = document.getElementById('qTypeBadge');
   if (qTypeBadge) {
     qTypeBadge.textContent = q.type === 'mcq' ? 'MCQ' : 'Numerical';
+  }
+
+  // Marks info (update if the element exists)
+  const marksEl = document.querySelector('.nta-q-marks');
+  if (marksEl) {
+    marksEl.innerHTML = q.type === 'mcq'
+      ? 'Marks: <strong>+4</strong> / <strong>−1</strong>'
+      : 'Marks: <strong>+4</strong> / <strong>0</strong>';
   }
 
   // Question image
@@ -205,20 +221,20 @@ function renderCBTQuestion() {
 }
 
 /* ==================================================================
-   RENDER MCQ OPTIONS
+   MCQ OPTIONS — NTA Radio Style
    ================================================================== */
 function renderMCQOptions(q) {
   const list = document.getElementById('optionsList');
   if (!list) return;
-
   list.innerHTML = '';
 
+  const labels = ['A', 'B', 'C', 'D'];
   for (let i = 1; i <= 4; i++) {
     const row = document.createElement('div');
-    row.className = 'option-row' + (q.userAnswer === i ? ' selected' : '');
+    row.className = 'nta-option-row' + (q.userAnswer === i ? ' selected' : '');
     row.innerHTML = `
-      <span class="opt-num">${i}.</span>
-      <span>Option ${i}</span>
+      <div class="nta-radio-circle">${labels[i - 1]}</div>
+      <div class="nta-option-text">Option ${i}</div>
     `;
     row.addEventListener('click', () => selectCBTOption(i));
     list.appendChild(row);
@@ -226,26 +242,21 @@ function renderMCQOptions(q) {
 }
 
 function selectCBTOption(optionNum) {
-  const questions = CBTState.sections[CBTState.currentSubject];
-  const q = questions[CBTState.currentIdx];
+  const q = getCurrentQuestion();
   if (!q) return;
-
   q.userAnswer = optionNum;
   renderCBTQuestion();
 }
 
 /* ==================================================================
-   KEYPAD HANDLERS (numerical)
+   KEYPAD
    ================================================================== */
 function keypad(val) {
   const input = document.getElementById('numInput');
   if (!input) return;
-
-  let current = input.value;
-
+  const current = input.value;
   if (val === '-' && current.length > 0) return;
   if (val === '.' && current.includes('.')) return;
-
   input.value = current + val;
 }
 
@@ -262,15 +273,20 @@ function clearNum() {
 }
 
 /* ==================================================================
-   RENDER PALETTE (current section only)
+   PALETTE
    ================================================================== */
 function renderCBTPalette() {
   const grid = document.getElementById('paletteGrid');
   if (!grid) return;
 
   const questions = CBTState.sections[CBTState.currentSubject] || [];
-
   grid.innerHTML = '';
+
+  // Update header
+  const title = document.getElementById('paletteTitle');
+  const sub = document.getElementById('paletteSubtitle');
+  if (title) title.textContent = `${CBTState.currentSubject} — Section`;
+  if (sub) sub.textContent = `Choose a Question (Total: ${questions.length})`;
 
   const counts = {
     'not-visited': 0,
@@ -284,14 +300,13 @@ function renderCBTPalette() {
     counts[q.status] = (counts[q.status] || 0) + 1;
 
     const btn = document.createElement('button');
-    btn.className = 'pal-btn ' + q.status + (i === CBTState.currentIdx ? ' current' : '');
+    btn.className = 'nta-pal-btn ' + q.status + (i === CBTState.currentIdx ? ' current' : '');
     btn.textContent = String(i + 1).padStart(2, '0');
     btn.title = `Q${q.qNumber} · ${q.type === 'mcq' ? 'MCQ' : 'Numerical'}`;
     btn.addEventListener('click', () => jumpToCBTQuestion(i));
     grid.appendChild(btn);
   });
 
-  // Update legend counts
   setElText('cntNotVisited', counts['not-visited']);
   setElText('cntNotAnswered', counts['not-answered']);
   setElText('cntAnswered', counts['answered']);
@@ -310,14 +325,10 @@ function setElText(id, text) {
 function saveAndNext() {
   const q = getCurrentQuestion();
   if (!q) return;
-
   syncNumericalInput(q);
 
-  if (q.userAnswer !== null && q.userAnswer !== undefined && q.userAnswer !== '') {
-    q.status = 'answered';
-  } else {
-    q.status = 'not-answered';
-  }
+  q.status = (q.userAnswer !== null && q.userAnswer !== undefined && q.userAnswer !== '')
+    ? 'answered' : 'not-answered';
 
   goToNextQuestion();
 }
@@ -325,12 +336,10 @@ function saveAndNext() {
 function saveAndMark() {
   const q = getCurrentQuestion();
   if (!q) return;
-
   syncNumericalInput(q);
 
   q.status = (q.userAnswer !== null && q.userAnswer !== undefined && q.userAnswer !== '')
-    ? 'answered-marked'
-    : 'marked';
+    ? 'answered-marked' : 'marked';
 
   goToNextQuestion();
 }
@@ -338,12 +347,10 @@ function saveAndMark() {
 function markAndNext() {
   const q = getCurrentQuestion();
   if (!q) return;
-
   syncNumericalInput(q);
 
   q.status = (q.userAnswer !== null && q.userAnswer !== undefined && q.userAnswer !== '')
-    ? 'answered-marked'
-    : 'marked';
+    ? 'answered-marked' : 'marked';
 
   goToNextQuestion();
 }
@@ -383,7 +390,7 @@ function goToNextQuestion() {
     CBTState.currentIdx++;
     renderCBTQuestion();
   } else {
-    // Last question in current section — try next section
+    // Move to next section
     const subjects = ['Physics', 'Chemistry', 'Mathematics'];
     const currentSubjIdx = subjects.indexOf(CBTState.currentSubject);
     let nextSubj = null;
@@ -397,10 +404,14 @@ function goToNextQuestion() {
 
     if (nextSubj) {
       switchSubject(nextSubj);
-      showQuickToast(`Moved to ${nextSubj} 📑`);
+      if (typeof showQuickToast === 'function') {
+        showQuickToast(`Moved to ${nextSubj} 📑`);
+      }
     } else {
       renderCBTPalette();
-      showQuickToast('Last question of last section ✅');
+      if (typeof showQuickToast === 'function') {
+        showQuickToast('Last question of last section ✅');
+      }
     }
   }
 }
@@ -422,9 +433,7 @@ function getCurrentQuestion() {
 function syncNumericalInput(q) {
   if (q.type === 'numerical') {
     const input = document.getElementById('numInput');
-    if (input) {
-      q.userAnswer = input.value.trim() || null;
-    }
+    if (input) q.userAnswer = input.value.trim() || null;
   }
 }
 
@@ -444,14 +453,13 @@ function startCBTTimer() {
       return;
     }
 
-    // 30 min warning
     if (CBTState.timeLeft === 30 * 60 && !CBTState.warned30) {
       CBTState.warned30 = true;
       showInfoPopup('⚠️ <strong>30 minutes remaining!</strong><br>Review your answers.', 'Time Warning');
     }
 
-    // 5 min warning
-    if (CBTState.timeLeft === 5 * 60) {
+    if (CBTState.timeLeft === 5 * 60 && !CBTState.warned5) {
+      CBTState.warned5 = true;
       showInfoPopup('⚠️ <strong>5 minutes remaining!</strong><br>Please prepare to submit.', 'Time Warning');
     }
 
@@ -468,13 +476,12 @@ function updateCBTTimerDisplay() {
   if (el) {
     el.textContent = `${h}:${m}:${s}`;
 
-    // Visual warning when time is low
     if (CBTState.timeLeft <= 5 * 60) {
-      el.style.background = '#c62828';
+      el.style.background = '#dc3545';
     } else if (CBTState.timeLeft <= 30 * 60) {
-      el.style.background = '#e65100';
+      el.style.background = '#fd7e14';
     } else {
-      el.style.background = '#0b4a8f';
+      el.style.background = '#0d6efd';
     }
   }
 }
@@ -485,32 +492,34 @@ function autoSubmitCBT() {
 }
 
 /* ==================================================================
-   SUBMIT FLOW
+   SUBMIT
    ================================================================== */
 function confirmSubmit() {
-  // Count unattempted across all sections
   let total = 0;
   let unattempted = 0;
 
   Object.values(CBTState.sections).forEach(arr => {
     arr.forEach(q => {
       total++;
-      if (q.status === 'not-answered' || q.status === 'not-visited') {
-        unattempted++;
-      }
+      if (q.status === 'not-answered' || q.status === 'not-visited') unattempted++;
     });
   });
 
   const answered = total - unattempted;
 
-  showSubmitPopup(`
-    <div style="text-align:left;line-height:1.9;">
-      <div><strong>Total:</strong> ${total}</div>
-      <div><strong>Answered:</strong> ${answered}</div>
-      <div><strong>Not Answered:</strong> ${unattempted}</div>
-    </div>
-    <p style="margin-top:14px;">Are you sure you want to submit?</p>
-  `);
+  const msgEl = document.getElementById('submitMsg');
+  if (msgEl) {
+    msgEl.innerHTML = `
+      <div style="text-align:left;line-height:1.9;margin-top:12px;">
+        <div><strong>Total:</strong> ${total}</div>
+        <div><strong>Answered:</strong> ${answered}</div>
+        <div><strong>Not Answered:</strong> ${unattempted}</div>
+      </div>
+      <p style="margin-top:14px;">Are you sure you want to submit?</p>
+    `;
+  }
+
+  document.getElementById('submitPopup')?.classList.add('active');
 }
 
 function finalSubmit() {
@@ -518,20 +527,15 @@ function finalSubmit() {
   CBTState.isActive = false;
   closePopup();
 
-  // Calculate result
   const result = calculateCBTResult();
-
-  // Render result screen
   renderCBTResult(result);
-
-  // Show result screen
   showScreen('resultScreen');
 
   console.log('📊 Result:', result);
 }
 
 /* ==================================================================
-   RESULT CALCULATION
+   RESULT
    ================================================================== */
 function calculateCBTResult() {
   const subjectWise = {};
@@ -543,31 +547,19 @@ function calculateCBTResult() {
 
     arr.forEach(q => {
       const answered = (q.status === 'answered' || q.status === 'answered-marked');
-
-      if (!answered) {
-        skipped++;
-        return;
-      }
+      if (!answered) { skipped++; return; }
 
       const isCorrect = checkCBTAnswer(q);
-
       if (isCorrect) {
         correct++;
         score += 4;
       } else {
         wrong++;
-        score -= (q.type === 'mcq' ? 1 : 0);   // Numerical: no negative
+        score -= (q.type === 'mcq' ? 1 : 0);
       }
     });
 
-    subjectWise[subj] = {
-      total: arr.length,
-      correct,
-      wrong,
-      skipped,
-      score
-    };
-
+    subjectWise[subj] = { total: arr.length, correct, wrong, skipped, score };
     totalScore += score;
     totalCorrect += correct;
     totalWrong += wrong;
@@ -576,12 +568,8 @@ function calculateCBTResult() {
 
   return {
     testName: CBTState.testName,
-    totalScore,
-    totalCorrect,
-    totalWrong,
-    totalSkipped,
-    subjectWise,
-    duration: CBTState.duration
+    totalScore, totalCorrect, totalWrong, totalSkipped,
+    subjectWise
   };
 }
 
@@ -589,22 +577,15 @@ function checkCBTAnswer(q) {
   if (q.type === 'mcq') {
     return q.userAnswer === q.correct;
   } else {
-    // Numerical: string compare with tolerance
     const userVal = parseFloat(q.userAnswer);
     const correctVal = parseFloat(q.correct);
-
     if (isNaN(userVal) || isNaN(correctVal)) {
       return String(q.userAnswer).trim() === String(q.correct).trim();
     }
-
-    // Allow small float tolerance
     return Math.abs(userVal - correctVal) < 0.01;
   }
 }
 
-/* ==================================================================
-   RENDER RESULT SCREEN
-   ================================================================== */
 function renderCBTResult(result) {
   const nameEl = document.getElementById('resultTestName');
   if (nameEl) nameEl.textContent = result.testName;
@@ -614,10 +595,8 @@ function renderCBTResult(result) {
   setElText('resultWrong', result.totalWrong);
   setElText('resultSkipped', result.totalSkipped);
 
-  // Subject-wise table
   const tbody = document.getElementById('resultTableBody');
   if (!tbody) return;
-
   tbody.innerHTML = '';
 
   const subjectOrder = ['Physics', 'Chemistry', 'Mathematics'];
@@ -628,8 +607,8 @@ function renderCBTResult(result) {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><strong>${subj}</strong></td>
-      <td style="color:#2e7d32;font-weight:600;">${data.correct}</td>
-      <td style="color:#e65100;font-weight:600;">${data.wrong}</td>
+      <td style="color:#198754;font-weight:600;">${data.correct}</td>
+      <td style="color:#dc3545;font-weight:600;">${data.wrong}</td>
       <td style="color:#888;">${data.skipped}</td>
       <td style="color:#0b4a8f;font-weight:700;">${data.score}</td>
     `;
@@ -638,17 +617,7 @@ function renderCBTResult(result) {
 }
 
 /* ==================================================================
-   RESTART / EXIT
-   ================================================================== */
-function exitCBT() {
-  if (!confirm('Test se bahar nikalna chahte ho? Progress lost ho jaayega.')) return;
-  clearInterval(CBTState.timerInterval);
-  CBTState.isActive = false;
-  goToHome();
-}
-
-/* ==================================================================
-   KEYBOARD SHORTCUTS (test screen)
+   KEYBOARD SHORTCUTS (Test screen)
    ================================================================== */
 document.addEventListener('keydown', (e) => {
   if (AppState.currentScreen !== 'testScreen') return;
@@ -656,17 +625,9 @@ document.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
 
   switch (e.key) {
-    case 'ArrowRight':
-      nextQ();
-      break;
-    case 'ArrowLeft':
-      prevQ();
-      break;
-    case '1':
-    case '2':
-    case '3':
-    case '4':
-      // Quick MCQ option select
+    case 'ArrowRight': nextQ(); break;
+    case 'ArrowLeft': prevQ(); break;
+    case '1': case '2': case '3': case '4':
       if (e.altKey) {
         const q = getCurrentQuestion();
         if (q && q.type === 'mcq') selectCBTOption(parseInt(e.key));
@@ -675,4 +636,4 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-console.log('🎯 cbt.js loaded');
+console.log('🎯 cbt.js loaded (NTA layout)');
