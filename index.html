@@ -1,192 +1,279 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>JEE Main CBT Simulator</title>
-  <link rel="stylesheet" href="css/style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>JEE Main CBT Simulator</title>
+<link rel="stylesheet" href="css/style.css" />
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 </head>
 <body>
 
-<!-- ================= SCREEN 1: LOGIN ================= -->
+<!-- ====================== SCREEN 1: LOGIN ====================== -->
 <div id="loginScreen" class="screen active">
-  <div class="login-box">
-    <h2>JEE (Main) Computer Based Test</h2>
-    <div class="candidate-info">
-      <div class="photo-placeholder">📷</div>
-      <div>
-        <p><strong>Candidate Name:</strong> <span id="loginName">Demo Student</span></p>
-        <p><strong>Roll Number:</strong> <span id="loginRoll">1234567890</span></p>
-        <p><strong>Subject:</strong> B.E./B.Tech</p>
+  <!-- NTA Header -->
+  <div class="nta-header">
+    <div class="header-left">
+      <div class="logo-box">
+        <div class="logo-mini">Ministry of Education</div>
+        <div class="logo-sub">Government of India</div>
       </div>
     </div>
-    <label>Login ID</label>
-    <input type="text" id="loginId" placeholder="Enter Login ID" />
-    <label>Password</label>
-    <input type="password" id="loginPwd" placeholder="Enter Password" />
-    <button onclick="signIn()" class="btn-primary">Sign In</button>
+    <div class="header-center">
+      <div class="nta-logo">
+        <span class="nta-emblem">🟠🟢</span>
+        <div>
+          <div class="nta-title">राष्ट्रीय परीक्षा एजेंसी</div>
+          <div class="nta-sub">National Testing Agency</div>
+          <div class="nta-tag">Excellence in Assessment</div>
+        </div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="amrit-logo">75 Azadi ka Amrit Mahotsav</div>
+    </div>
   </div>
+
+  <!-- System Info -->
+  <div class="system-info">
+    <div class="sys-photo">
+      <div class="photo-box">👤</div>
+    </div>
+    <div class="sys-details">
+      <p><strong>System Name :</strong> [C0001]</p>
+      <p class="warn-text">[Contact Invigilator if the Name and Photograph displayed on the screen is not yours]</p>
+      <p><strong>Candidate Name :</strong> [Your Name]</p>
+      <p><strong>Subject Name :</strong> [Practice Paper]</p>
+    </div>
+    <div class="lang-top">
+      <select>
+        <option>English</option>
+        <option>हिन्दी</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Login Box -->
+  <div class="login-wrapper">
+    <div class="login-card">
+      <h3>Login (Demo)</h3>
+      <label>Username</label>
+      <input type="text" id="loginUser" value="DemoCandidate" />
+      <label>Password</label>
+      <input type="password" id="loginPass" value="********" />
+      <button class="btn-login" onclick="goToInstructions()">LOGIN</button>
+      <p class="login-hint">Click Login To proceed</p>
+    </div>
+  </div>
+
+  <div class="nta-footer">© All Rights Reserved - National Testing Agency</div>
 </div>
 
-<!-- ================= SCREEN 2: INSTRUCTIONS ================= -->
+<!-- ====================== SCREEN 2: INSTRUCTIONS ====================== -->
 <div id="instructionsScreen" class="screen">
-  <div class="instructions-header">
-    <h2>General Instructions</h2>
-    <select id="languageSelect">
-      <option>English</option>
-      <option>हिन्दी</option>
-    </select>
+  <div class="nta-header small">
+    <div class="header-left">
+      <div class="logo-mini">Ministry of Education</div>
+    </div>
+    <div class="header-center">
+      <div class="nta-title-small">GENERAL INSTRUCTIONS</div>
+    </div>
+    <div class="header-right">
+      <select class="lang-select">
+        <option>English</option>
+        <option>हिन्दी</option>
+      </select>
+    </div>
   </div>
-  <div class="instructions-body" id="instructionsBody">
-    <!-- JS se fill hoga -->
+
+  <div class="instr-body">
+    <!-- Left: Instructions text -->
+    <div class="instr-text" id="instrText">
+      <p style="text-align:center;font-weight:bold;margin-bottom:15px;">Please read the instructions carefully</p>
+
+      <h4>General Instructions:</h4>
+      <ol>
+        <li>Total duration of JEE-Main examination is <strong>180 min</strong>.</li>
+        <li>The clock will be set at the server. The countdown timer in the top right corner of screen will display the remaining time available for you to complete the examination. When the timer reaches zero, the examination will end by itself. You will not be required to end or submit your examination.</li>
+        <li>The Question Palette displayed on the right side of screen will show the status of each question using one of the following symbols:
+          <div class="palette-legend-instr">
+            <div><span class="legend-box white"></span> You have not visited the question yet.</div>
+            <div><span class="legend-box orange"></span> You have not answered the question.</div>
+            <div><span class="legend-box green"></span> You have answered the question.</div>
+            <div><span class="legend-box purple"></span> You have NOT answered the question, but have marked the question for review.</div>
+            <div><span class="legend-box purple-tick"></span> The question(s) "Answered and Marked for Review" will be considered for evaluation.</div>
+          </div>
+          <p style="margin-top:8px;font-size:12px;">The Marked for Review status for a question simply indicates that you would like to look at that question again.</p>
+        </li>
+        <li>You can click on your "Profile" image on top right corner of your screen to change the language during the exam for entire question paper.</li>
+        <li>You can click on the "&gt;" arrow which appears to the left of question palette to collapse the question palette thereby maximizing the question window. To view the question palette again, you can click on "&lt;" which appears on the right side of question window.</li>
+        <li>You can click on <span class="blue-circle">⬇</span> to navigate to the bottom and <span class="blue-circle">⬆</span> to navigate to the top of the question area, without scrolling.</li>
+      </ol>
+
+      <h4>Navigating to a Question:</h4>
+      <ol start="7">
+        <li>To answer a question, do the following:
+          <ol type="a">
+            <li>Click on the question number in the Question Palette at the right of your screen to go to that numbered question directly. Note that using this option does NOT save your answer to the current question.</li>
+            <li>Click on <strong>Save &amp; Next</strong> to save your answer for the current question and then go to the next question.</li>
+            <li>Click on <strong>Mark for Review &amp; Next</strong> to save your answer for the current question, mark it for review, and then go to the next question.</li>
+          </ol>
+        </li>
+      </ol>
+
+      <h4>Answering a Question:</h4>
+      <ol start="8">
+        <li>Procedure for answering a multiple choice type question:
+          <ol type="a">
+            <li>To select your answer, click on the button of one of the options.</li>
+            <li>To deselect your chosen answer, click on the button of the chosen option again or click on the <strong>Clear Response</strong> button.</li>
+            <li>To change your chosen answer, click on the button of another option.</li>
+            <li>To save your answer, you MUST click on the <strong>Save &amp; Next</strong> button.</li>
+            <li>To mark the question for review, click on the <strong>Mark for Review &amp; Next</strong> button.</li>
+          </ol>
+        </li>
+        <li>To change your answer to a question that has already been answered, first select that question for answering and then follow the procedure for answering that type of question.</li>
+      </ol>
+
+      <h4>Navigating through sections:</h4>
+      <ol start="10">
+        <li>Sections in this question paper are displayed on the top bar of the screen. Questions in a section can be viewed by clicking on the section name. The section you are currently viewing is highlighted.</li>
+        <li>After clicking the <strong>Save &amp; Next</strong> button on the last question for a section, you will automatically be taken to the first question of the next section.</li>
+        <li>You can shuffle between sections and questions anytime during the examination as per your convenience only during the time stipulated.</li>
+        <li>Candidate can view the corresponding section summary as part of the legend that appears in every section above the question palette.</li>
+      </ol>
+
+      <h4>Instruction for Question:</h4>
+      <ol start="15">
+        <li>For the correctness of the translation for a particular language, only the English version will be considered as the final version for evaluation purposes.</li>
+        <li>The keyboard attached to the computer, if any, will be disabled during the entire duration of the examination. Depending on the type of question, the answers to questions can either be entered by clicking on the virtual on-screen keyboard (numeric or otherwise) using the computer mouse or by clicking the chosen option(s) using the computer mouse.</li>
+        <li>In case the computer/mouse allotted to any candidate malfunctions during the test, he/she will be immediately allotted another computer system and the time lost due to this will be adjusted in the server so as to give the candidate the full allotted time.</li>
+        <li>The on-screen computer clock counter of every candidate will be set at the server. The countdown timer on the top right side of the computer screen will display the time remaining (in minutes) available for the candidate to complete the examination.</li>
+        <li>The Question Palette displayed on the screen will show the status of each question.</li>
+        <li>The question(s) "Answered and Marked for Review" status for a question indicates that the candidates would like to have a relook at that question again.</li>
+      </ol>
+
+      <p><strong>a)</strong> The full paper can be viewed by clicking the "Question Paper" icon on the top right corner of the screen.</p>
+      <p><strong>b)</strong> Blank Sheets for doing Rough Work/ Calculations shall be provided to the candidates. All calculations writing work is to be done only in the Blank Sheets provided at the Centre in the Examination Room/Hall.</p>
+    </div>
+
+    <!-- Right: Candidate Info -->
+    <div class="instr-sidebar">
+      <div class="cand-photo">👤</div>
+      <div class="cand-name">RAVI RAJ</div>
+    </div>
   </div>
-  <div class="instructions-footer">
-    <label>
+
+  <!-- Footer: Checkbox + Button -->
+  <div class="instr-footer">
+    <label class="agree-label">
       <input type="checkbox" id="agreeCheck" onchange="toggleReadyBtn()" />
-      I have read and understood the instructions.
+      I have read and understood the instructions. All computer hardware allotted to me are in proper working condition. I declare that I am not in possession of / not wearing / not carrying any prohibited gadget like mobile phone, bluetooth devices etc. /any prohibited material with me into the Examination Hall.
     </label>
-    <button id="readyBtn" class="btn-primary" disabled onclick="startTest()">
-      I am ready to begin
-    </button>
+    <button id="readyBtn" class="btn-ready" disabled onclick="startTest()">I am ready to begin</button>
   </div>
+
+  <div class="nta-footer">© All Rights Reserved - National Testing Agency</div>
 </div>
 
-<!-- ================= SCREEN 3: TEST ================= -->
+<!-- ====================== SCREEN 3: TEST ====================== -->
 <div id="testScreen" class="screen">
-
-  <!-- Top Bar -->
-  <div class="top-bar">
-    <div class="top-left">
-      <span id="candidateName">Demo Student</span>
-      <span id="candidateRoll"> | Roll: 1234567890</span>
+  <!-- Top Info Bar -->
+  <div class="test-info-bar">
+    <div class="info-photo">👤</div>
+    <div class="info-text">
+      <p><strong>Candidate Name :</strong> <span id="candName">RAVI RAJ</span></p>
+      <p><strong>Exam Name :</strong> JEE-Main</p>
+      <p><strong>Subject Name :</strong> 40503615_BTECH 7th Jan 2020 Shift 2</p>
+      <p><strong>Remaining Time :</strong> <span id="timerDisplay" class="timer-badge">03:00:00</span></p>
     </div>
-    <div class="top-center">
-      <div class="section-tabs" id="sectionTabs">
-        <!-- JS se fill -->
-      </div>
-    </div>
-    <div class="top-right">
-      <span class="timer-label">Time Left:</span>
-      <span id="timerDisplay" class="timer">03:00:00</span>
+    <div class="lang-top">
+      <select class="lang-select">
+        <option>English</option>
+        <option>हिन्दी</option>
+      </select>
     </div>
   </div>
 
-  <!-- Main Body -->
-  <div class="test-body">
-    <!-- Question Area -->
-    <div class="question-area">
-      <div class="question-header">
-        <span>Question No. <span id="qNumber">1</span></span>
-        <span id="qTypeBadge" class="badge">MCQ</span>
+  <!-- Question Area -->
+  <div class="test-content">
+    <div class="question-box">
+      <div class="q-header">
+        <span>Question <span id="qNumber">1</span>:</span>
+        <span class="q-type-badge" id="qTypeBadge">MCQ</span>
       </div>
-      <div class="question-text" id="questionText"></div>
+      <div class="q-text" id="questionText"></div>
 
-      <div class="options-container" id="optionsContainer"></div>
+      <!-- Options -->
+      <div class="options-list" id="optionsList"></div>
 
       <!-- Numerical Keypad -->
-      <div class="keypad-container" id="keypadContainer" style="display:none;">
-        <div class="keypad-display">
-          <input type="text" id="numericInput" readonly />
-        </div>
-        <div class="keypad-grid">
-          <button onclick="keypadPress('1')">1</button>
-          <button onclick="keypadPress('2')">2</button>
-          <button onclick="keypadPress('3')">3</button>
-          <button onclick="keypadPress('4')">4</button>
-          <button onclick="keypadPress('5')">5</button>
-          <button onclick="keypadPress('6')">6</button>
-          <button onclick="keypadPress('7')">7</button>
-          <button onclick="keypadPress('8')">8</button>
-          <button onclick="keypadPress('9')">9</button>
-          <button onclick="keypadPress('0')">0</button>
-          <button onclick="keypadPress('-')">−</button>
-          <button onclick="keypadPress('.')">.</button>
-          <button onclick="keypadBackspace()">⌫</button>
-          <button onclick="keypadClear()">Clear</button>
+      <div class="keypad-wrap" id="keypadWrap" style="display:none;">
+        <input type="text" id="numInput" readonly />
+        <div class="keypad">
+          <button onclick="keypad('1')">1</button>
+          <button onclick="keypad('2')">2</button>
+          <button onclick="keypad('3')">3</button>
+          <button onclick="keypad('4')">4</button>
+          <button onclick="keypad('5')">5</button>
+          <button onclick="keypad('6')">6</button>
+          <button onclick="keypad('7')">7</button>
+          <button onclick="keypad('8')">8</button>
+          <button onclick="keypad('9')">9</button>
+          <button onclick="keypad('0')">0</button>
+          <button onclick="keypad('-')">−</button>
+          <button onclick="keypad('.')">.</button>
+          <button onclick="backspace()">⌫</button>
+          <button onclick="clearNum()">Clear</button>
         </div>
       </div>
     </div>
 
-    <!-- Question Palette -->
-    <div class="palette-area">
-      <div class="palette-header">
-        <span>Question Palette</span>
-        <button class="collapse-btn" onclick="togglePalette()">◀</button>
+    <!-- Palette -->
+    <div class="palette-panel">
+      <div class="palette-legend-row">
+        <div><span class="lg-box grey" id="cntNotVisited">0</span> Not Visited</div>
+        <div><span class="lg-box orange" id="cntNotAnswered">0</span> Not Answered</div>
+        <div><span class="lg-box green" id="cntAnswered">0</span> Answered</div>
+        <div><span class="lg-box purple" id="cntMarked">0</span> Marked for Review</div>
+        <div><span class="lg-box purple-tick" id="cntMarkedAns">0</span> Answered &amp; Marked for Review</div>
       </div>
-      <div class="palette-legend" id="paletteLegend">
-        <!-- Legend items -->
-      </div>
-      <div class="palette-grid" id="paletteGrid">
-        <!-- JS se fill -->
-      </div>
+      <div class="palette-grid" id="paletteGrid"></div>
     </div>
   </div>
 
-  <!-- Bottom Bar -->
-  <div class="bottom-bar">
-    <div class="bottom-left">
-      <button class="btn-nav" onclick="prevQuestion()">◀ Previous</button>
+  <!-- Bottom Nav -->
+  <div class="test-bottom">
+    <div class="bottom-row1">
+      <button class="btn-green" onclick="saveAndNext()">SAVE &amp; NEXT</button>
+      <button class="btn-grey" onclick="clearResponse()">CLEAR</button>
+      <button class="btn-orange" onclick="saveAndMark()">SAVE &amp; MARK FOR REVIEW</button>
+      <button class="btn-blue" onclick="markAndNext()">MARK FOR REVIEW &amp; NEXT</button>
     </div>
-    <div class="bottom-center">
-      <button class="btn-secondary" onclick="clearResponse()">Clear Response</button>
-      <button class="btn-secondary" onclick="markForReviewNext()">Mark for Review & Next</button>
-      <button class="btn-primary" onclick="saveAndNext()">Save & Next</button>
-    </div>
-    <div class="bottom-right">
-      <button class="btn-submit" onclick="confirmSubmit()">Submit</button>
+    <div class="bottom-row2">
+      <button class="btn-nav" onclick="prevQ()">&lt;&lt; BACK</button>
+      <button class="btn-nav" onclick="nextQ()">NEXT &gt;&gt;</button>
+      <button class="btn-submit" onclick="confirmSubmit()">SUBMIT</button>
     </div>
   </div>
+
+  <div class="nta-footer">© All Rights Reserved - National Testing Agency</div>
 </div>
 
-<!-- ================= SCREEN 4: SUBMIT SUMMARY ================= -->
-<div id="submitScreen" class="screen">
-  <div class="submit-box">
-    <h2>Submission Summary</h2>
-    <table class="summary-table" id="summaryTable"></table>
-    <div class="submit-actions">
-      <button class="btn-secondary" onclick="backToTest()">Back to Test</button>
-      <button class="btn-primary" onclick="finalSubmit()">Yes, Submit</button>
-    </div>
-  </div>
-</div>
-
-<!-- ================= SCREEN 5: RESULT ================= -->
-<div id="resultScreen" class="screen">
-  <div class="result-box">
-    <h2>Scorecard</h2>
-    <div class="result-summary" id="resultSummary"></div>
-    <table class="result-table" id="resultTable"></table>
-    <button class="btn-primary" onclick="location.reload()">Restart</button>
-  </div>
-</div>
-
-<!-- ================= POPUPS ================= -->
-<div id="warningPopup" class="popup">
-  <div class="popup-content">
-    <h3>⚠️ Warning</h3>
-    <p id="warningMsg"></p>
-    <button onclick="closeWarning()">OK</button>
-  </div>
-</div>
-
-<div id="submitConfirmPopup" class="popup">
+<!-- ====================== POPUP: SUBMIT ====================== -->
+<div id="submitPopup" class="popup">
   <div class="popup-content">
     <h3>Confirm Submission</h3>
-    <p id="submitConfirmMsg"></p>
+    <p id="submitMsg"></p>
     <div class="popup-actions">
-      <button class="btn-secondary" onclick="closeSubmitPopup()">Cancel</button>
-      <button class="btn-primary" onclick="finalSubmit()">Yes, Submit</button>
+      <button class="btn-grey" onclick="closePopup()">Cancel</button>
+      <button class="btn-green" onclick="finalSubmit()">Yes, Submit</button>
     </div>
   </div>
 </div>
 
-<script src="js/timer.js"></script>
-<script src="js/palette.js"></script>
-<script src="js/keypad.js"></script>
-<script src="js/result.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>
