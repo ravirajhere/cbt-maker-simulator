@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>JEE CBT Maker & Simulator</title>
+<title>JEE Main CBT Simulator</title>
 <link rel="stylesheet" href="css/style.css" />
 
 <!-- PDF.js for PDF rendering -->
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 
-<!-- KaTeX for math (existing test UI) -->
+<!-- KaTeX for math rendering -->
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
@@ -17,44 +17,55 @@
 <body>
 
 <!-- ==================================================================
-     SCREEN 1: HOME — Upload PDF or Load Saved Test
+     SCREEN 1: HOME — Upload PDF / Load Saved Test / Import
      ================================================================== -->
 <div id="homeScreen" class="screen active">
 
   <div class="app-header">
-    <div class="app-logo">📝 JEE CBT Maker</div>
-    <div class="app-sub">Apna PDF upload karo → Crop karo → Test do</div>
+    <div class="app-logo">📝 JEE Main CBT Simulator</div>
+    <div class="app-sub">Upload any question paper PDF → Crop → Practice in NTA-style CBT</div>
   </div>
 
   <div class="home-body">
 
-    <!-- New Test Section -->
+    <!-- New Test -->
     <div class="home-card">
-      <h2>➕ Naya Test Banao</h2>
-      <p class="card-desc">Apne question paper ki PDF upload karo. Questions crop karo. CBT ready.</p>
+      <h2>➕ Create New Test</h2>
+      <p class="card-desc">Upload your question paper PDF. Crop questions visually. Take a full CBT-style mock test.</p>
 
       <label for="pdfUpload" class="upload-btn">
-        📄 PDF Upload Karo
+        📄 Upload PDF
       </label>
       <input type="file" id="pdfUpload" accept="application/pdf" hidden />
 
       <p id="uploadedFileName" class="file-name"></p>
+
+      <hr class="card-divider" />
+
+      <h3 class="card-subtitle">📥 Import a Shared Test</h3>
+      <p class="card-desc-sm">Received a <code>.cbt.json</code> file from a friend? Import it to practice.</p>
+
+      <label for="importFile" class="import-btn">
+        📂 Import Test File
+      </label>
+      <input type="file" id="importFile" accept=".json,.cbt.json,application/json" hidden />
     </div>
 
-    <!-- Saved Tests Section -->
+    <!-- Saved Tests -->
     <div class="home-card">
       <h2>📂 Saved Tests</h2>
-      <p class="card-desc">Pehle se banaye gaye tests yahan dikhenge.</p>
+      <p class="card-desc">Previously created tests appear below. Tap to resume or edit.</p>
 
       <div id="savedTestsList" class="saved-list">
-        <!-- JS se fill hoga -->
-        <p class="empty-msg">Abhi koi test save nahi hai.</p>
+        <p class="empty-msg">No saved tests yet.</p>
       </div>
     </div>
 
   </div>
 
-  <div class="app-footer">Made for JEE aspirants · Local-only · No data leaves your device</div>
+  <div class="app-footer">
+    🔒 All data stays on your device · No uploads · No tracking
+  </div>
 </div>
 
 <!-- ==================================================================
@@ -62,16 +73,18 @@
      ================================================================== -->
 <div id="cropScreen" class="screen">
 
-  <!-- Top bar -->
+  <!-- Top toolbar -->
   <div class="tool-bar">
     <div class="tool-left">
       <button class="btn-tool" onclick="goToHome()">← Back</button>
       <span class="file-label" id="cropFileName">paper.pdf</span>
     </div>
     <div class="tool-center">
-      <button class="btn-tool" onclick="prevPage()">◀ Prev</button>
-      <span class="page-indicator">Page <span id="currentPage">1</span> / <span id="totalPages">1</span></span>
-      <button class="btn-tool" onclick="nextPage()">Next ▶</button>
+      <button class="btn-tool" onclick="prevPage()" title="Previous page">◀ Prev</button>
+      <span class="page-indicator">
+        Page <span id="currentPage">1</span> / <span id="totalPages">1</span>
+      </span>
+      <button class="btn-tool" onclick="nextPage()" title="Next page">Next ▶</button>
     </div>
     <div class="tool-right">
       <span class="crop-count">Cropped: <strong id="cropCount">0</strong></span>
@@ -79,47 +92,50 @@
     </div>
   </div>
 
-  <!-- Main area -->
+  <!-- Crop body -->
   <div class="crop-body">
 
-    <!-- PDF Canvas Area -->
+    <!-- PDF Canvas -->
     <div class="pdf-viewer" id="pdfViewer">
       <canvas id="pdfCanvas"></canvas>
-      <!-- Crop overlay will be added dynamically -->
       <div id="cropOverlay" class="crop-overlay" style="display:none;"></div>
     </div>
 
-    <!-- Side panel: Crop metadata -->
+    <!-- Side panel -->
     <div class="crop-side-panel">
 
       <h3>📋 Crop Settings</h3>
-      <p class="panel-hint">PDF pe drag karke question select karo.</p>
+      <p class="panel-hint">Drag on the PDF to select a question. Then click Save.</p>
 
-      <label>Subject</label>
+      <label for="cropSubject">Subject</label>
       <select id="cropSubject">
         <option value="Physics">Physics</option>
         <option value="Chemistry">Chemistry</option>
         <option value="Mathematics">Mathematics</option>
       </select>
 
-      <label>Section</label>
+      <label for="cropSection">Section</label>
       <select id="cropSection">
-        <option value="MCQ">Section A — MCQ (20 Q)</option>
-        <option value="Numerical">Section B — Numerical (5 Q)</option>
+        <option value="MCQ">Section A — MCQ (20 questions)</option>
+        <option value="Numerical">Section B — Numerical (5 questions)</option>
       </select>
 
-      <label>Question Number (within section)</label>
+      <label for="cropQNumber">Question Number</label>
       <input type="number" id="cropQNumber" min="1" max="30" value="1" />
 
       <button class="btn-save-crop" id="saveCropBtn" onclick="saveCurrentCrop()" disabled>
         ✅ Save This Crop
       </button>
 
+      <button class="btn-undo" onclick="undoLastCrop()" title="Ctrl+Z">
+        ↩️ Undo Last Crop
+      </button>
+
       <hr />
 
       <h4>Recent Crops</h4>
       <div id="recentCrops" class="recent-crops">
-        <p class="empty-msg">Koi crop nahi hua abhi.</p>
+        <p class="empty-msg">No crops yet.</p>
       </div>
 
     </div>
@@ -129,7 +145,7 @@
 </div>
 
 <!-- ==================================================================
-     SCREEN 3: QUESTION REVIEW + ANSWER KEY
+     SCREEN 3: REVIEW + ANSWER KEY
      ================================================================== -->
 <div id="reviewScreen" class="screen">
 
@@ -147,11 +163,11 @@
   <div class="review-body">
 
     <div class="review-header">
-      <p>Har question ka <strong>answer</strong> set karo. MCQ ke liye option click karo, Numerical ke liye value type karo.</p>
+      <p>Set the correct answer for each question below. Click an option for MCQ, or type the value for Numerical.</p>
     </div>
 
     <div id="reviewList" class="review-list">
-      <!-- JS se fill hoga -->
+      <!-- JS fills this -->
     </div>
 
   </div>
@@ -159,7 +175,7 @@
 </div>
 
 <!-- ==================================================================
-     SCREEN 4: TEST CONFIG
+     SCREEN 4: TEST CONFIGURATION
      ================================================================== -->
 <div id="configScreen" class="screen">
 
@@ -172,63 +188,185 @@
 
   <div class="config-body">
     <div class="config-card">
-      <h2>⚙️ Test Configure Karo</h2>
+      <h2>⚙️ Configure Your Test</h2>
 
-      <label>Test Name</label>
+      <label for="configTestName">Test Name</label>
       <input type="text" id="configTestName" placeholder="e.g. JEE Main 2024 Jan Shift 1" />
 
-      <label>Duration (minutes)</label>
+      <label for="configDuration">Duration (minutes)</label>
       <input type="number" id="configDuration" value="180" min="10" max="300" />
 
       <div class="config-summary" id="configSummary">
-        <!-- JS se fill hoga -->
+        <!-- JS fills -->
       </div>
 
       <div class="config-actions">
         <button class="btn-secondary-tool" onclick="goToReview()">Cancel</button>
-        <button class="btn-primary-tool" onclick="startCBT()">🚀 Start Test</button>
+        <button class="btn-primary-tool" onclick="goToInstructions()">Proceed to Instructions →</button>
       </div>
 
-      <hr />
+      <hr class="card-divider" />
 
-      <h4>💾 Save for Later</h4>
-      <p class="panel-hint">Ye test browser mein save ho jaayega. Baad mein home page se access kar sakta hai.</p>
-      <button class="btn-save-test" onclick="saveTestToLocal()">Save Test</button>
+      <h4>💾 Save & Share</h4>
+      <p class="panel-hint">Save this test locally, or export it to share with friends.</p>
+
+      <div class="config-btn-row">
+        <button class="btn-save-test" onclick="saveTestToLocal()">💾 Save Test</button>
+        <button class="btn-export-test" onclick="exportTestAsFile()">📤 Export (.cbt.json)</button>
+      </div>
     </div>
   </div>
 
 </div>
 
 <!-- ==================================================================
-     SCREEN 5: CBT TEST — Same as before, but questions are images
+     SCREEN 5: INSTRUCTIONS (NTA-style)
+     ================================================================== -->
+<div id="instructionsScreen" class="screen">
+
+  <div class="nta-header small">
+    <div class="header-left">
+      <div class="logo-mini">Ministry of Education</div>
+      <div class="logo-sub">Government of India</div>
+    </div>
+    <div class="header-center">
+      <div class="nta-title-small">GENERAL INSTRUCTIONS</div>
+    </div>
+    <div class="header-right">
+      <select class="lang-select">
+        <option>English</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="selected-paper-banner">
+    <span class="banner-icon">📄</span>
+    <span>Test: <strong id="selectedPaperName">—</strong></span>
+    <button class="btn-change" onclick="goToTestConfig()">Change</button>
+  </div>
+
+  <div class="instr-body">
+    <div class="instr-text" id="instrText">
+
+      <p class="instr-title">Please read the instructions carefully</p>
+
+      <h4>General Instructions:</h4>
+      <ol>
+        <li>Total duration of the examination is <strong>180 minutes</strong>.</li>
+        <li>The clock will be set at the server. The countdown timer in the top right corner of the screen will display the remaining time available for you to complete the examination. When the timer reaches zero, the examination will end by itself. You will not be required to end or submit your examination.</li>
+        <li>The Question Palette displayed on the right side of the screen will show the status of each question using one of the following symbols:
+          <div class="palette-legend-instr">
+            <div><span class="legend-box white"></span> You have not visited the question yet.</div>
+            <div><span class="legend-box orange"></span> You have not answered the question.</div>
+            <div><span class="legend-box green"></span> You have answered the question.</div>
+            <div><span class="legend-box purple"></span> You have NOT answered the question, but have marked the question for review.</div>
+            <div><span class="legend-box purple-tick"></span> The question(s) "Answered and Marked for Review" will be considered for evaluation.</div>
+          </div>
+          <p class="small-note">The Marked for Review status for a question simply indicates that you would like to look at that question again.</p>
+        </li>
+        <li>You can click on your "Profile" image on the top right corner of your screen to change the language during the exam for the entire question paper.</li>
+        <li>You can click on the ">" arrow which appears to the left of the question palette to collapse the question palette thereby maximizing the question window. To view the question palette again, you can click on "<" which appears on the right side of the question window.</li>
+        <li>You can click on the up-arrow to navigate to the top of the question area, without scrolling.</li>
+      </ol>
+
+      <h4>Navigating to a Question:</h4>
+      <ol start="7">
+        <li>To answer a question, do the following:
+          <ol type="a">
+            <li>Click on the question number in the Question Palette at the right of your screen to go to that numbered question directly. Note that using this option does NOT save your answer to the current question.</li>
+            <li>Click on <strong>Save &amp; Next</strong> to save your answer for the current question and then go to the next question.</li>
+            <li>Click on <strong>Mark for Review &amp; Next</strong> to save your answer for the current question, mark it for review, and then go to the next question.</li>
+          </ol>
+        </li>
+      </ol>
+
+      <h4>Answering a Question:</h4>
+      <ol start="8">
+        <li>Procedure for answering a multiple choice type question:
+          <ol type="a">
+            <li>To select your answer, click on the button of one of the options.</li>
+            <li>To deselect your chosen answer, click on the button of the chosen option again or click on the <strong>Clear Response</strong> button.</li>
+            <li>To change your chosen answer, click on the button of another option.</li>
+            <li>To save your answer, you MUST click on the <strong>Save &amp; Next</strong> button.</li>
+            <li>To mark the question for review, click on the <strong>Mark for Review &amp; Next</strong> button.</li>
+          </ol>
+        </li>
+        <li>To change your answer to a question that has already been answered, first select that question for answering and then follow the procedure for answering that type of question.</li>
+      </ol>
+
+      <h4>Navigating through sections:</h4>
+      <ol start="10">
+        <li>Sections in this question paper are displayed on the top bar of the screen. Questions in a section can be viewed by clicking on the section name. The section you are currently viewing is highlighted.</li>
+        <li>After clicking the <strong>Save &amp; Next</strong> button on the last question for a section, you will automatically be taken to the first question of the next section.</li>
+        <li>You can shuffle between sections and questions anytime during the examination as per your convenience only during the time stipulated.</li>
+        <li>Candidate can view the corresponding section summary as part of the legend that appears in every section above the question palette.</li>
+      </ol>
+
+      <h4>Instruction for Question:</h4>
+      <ol start="15">
+        <li>For the correctness of the translation for a particular language, only the English version will be considered as the final version for evaluation purposes.</li>
+        <li>The keyboard attached to the computer, if any, will be disabled during the entire duration of the examination. Depending on the type of question, the answers to questions can either be entered by clicking on the virtual on-screen keyboard (numeric or otherwise) using the computer mouse or by clicking the chosen option(s) using the computer mouse.</li>
+        <li>In case the computer/mouse allotted to any candidate malfunctions during the test, he/she will be immediately allotted another computer system and the time lost due to this will be adjusted in the server so as to give the candidate the full allotted time.</li>
+        <li>The on-screen computer clock counter of every candidate will be set at the server. The countdown timer on the top right side of the computer screen will display the time remaining (in minutes) available for the candidate to complete the examination.</li>
+        <li>The Question Palette displayed on the screen will show the status of each question.</li>
+        <li>The question(s) "Answered and Marked for Review" status for a question indicates that the candidates would like to have a relook at that question again.</li>
+      </ol>
+
+      <p><strong>a)</strong> The full paper can be viewed by clicking the "Question Paper" icon on the top right corner of the screen.</p>
+      <p><strong>b)</strong> Blank Sheets for doing Rough Work / Calculations shall be provided to the candidates. All calculations writing work is to be done only in the Blank Sheets provided at the Centre in the Examination Room / Hall.</p>
+
+    </div>
+
+    <div class="instr-sidebar">
+      <div class="cand-photo">👤</div>
+      <div class="cand-name">Demo Student</div>
+      <div class="cand-roll">Roll: 1234567890</div>
+    </div>
+  </div>
+
+  <div class="instr-footer">
+    <label class="agree-label">
+      <input type="checkbox" id="agreeCheck" onchange="toggleReadyBtn()" />
+      <span>I have read and understood the instructions. All computer hardware allotted to me are in proper working condition. I declare that I am not in possession of / not wearing / not carrying any prohibited gadget like mobile phone, bluetooth devices etc. / any prohibited material with me into the Examination Hall. I agree that in case of not adhering to the instructions, I shall be liable to be debarred from this Test and/or to disciplinary action, which may include ban from future Tests / Examinations.</span>
+    </label>
+    <button id="readyBtn" class="btn-ready" disabled onclick="startTest()">I am ready to begin</button>
+  </div>
+
+  <div class="nta-footer">© Practice Tool · Not affiliated with NTA</div>
+</div>
+
+<!-- ==================================================================
+     SCREEN 6: CBT TEST
      ================================================================== -->
 <div id="testScreen" class="screen">
 
-  <!-- Top info bar -->
+  <!-- Top Info Bar -->
   <div class="test-info-bar">
     <div class="info-photo">👤</div>
     <div class="info-text">
       <p><strong>Candidate Name :</strong> Demo Student</p>
-      <p><strong>Exam Name :</strong> <span id="cbtTestName">JEE Main Practice</span></p>
+      <p><strong>Exam Name :</strong> JEE Main — Practice</p>
+      <p><strong>Test Name :</strong> <span id="cbtTestName">—</span></p>
       <p><strong>Remaining Time :</strong> <span id="timerDisplay" class="timer-badge">03:00:00</span></p>
     </div>
     <div class="lang-top">
       <select class="lang-select">
         <option>English</option>
-        <option>हिन्दी</option>
       </select>
     </div>
   </div>
 
-  <!-- Section tabs -->
+  <!-- Section Tabs -->
   <div class="section-tabs-bar">
     <button class="section-tab active" data-subject="Physics" onclick="switchSubject('Physics')">Physics</button>
     <button class="section-tab" data-subject="Chemistry" onclick="switchSubject('Chemistry')">Chemistry</button>
     <button class="section-tab" data-subject="Mathematics" onclick="switchSubject('Mathematics')">Mathematics</button>
   </div>
 
-  <!-- Question area -->
+  <!-- Test Content -->
   <div class="test-content">
+
+    <!-- Question Area -->
     <div class="question-box">
 
       <div class="q-header">
@@ -236,14 +374,14 @@
         <span class="q-type-badge" id="qTypeBadge">MCQ</span>
       </div>
 
-      <!-- Question image (cropped) -->
+      <!-- Question Image -->
       <div class="q-image-wrap">
         <img id="questionImage" src="" alt="Question" />
       </div>
 
       <!-- MCQ Options -->
       <div class="options-list" id="optionsList">
-        <!-- JS se fill hoga - 4 buttons -->
+        <!-- JS fills -->
       </div>
 
       <!-- Numerical Keypad -->
@@ -282,15 +420,16 @@
       </div>
       <div class="palette-grid" id="paletteGrid"></div>
     </div>
+
   </div>
 
-  <!-- Bottom buttons -->
+  <!-- Bottom Buttons -->
   <div class="test-bottom">
     <div class="bottom-row1">
-      <button class="btn-green" onclick="saveAndNext()">SAVE &amp; NEXT</button>
-      <button class="btn-grey" onclick="clearResponse()">CLEAR</button>
-      <button class="btn-orange" onclick="saveAndMark()">SAVE &amp; MARK FOR REVIEW</button>
-      <button class="btn-blue" onclick="markAndNext()">MARK FOR REVIEW &amp; NEXT</button>
+      <button class="btn-green" onclick="saveAndNext()" title="Save answer and move to next question">SAVE &amp; NEXT</button>
+      <button class="btn-grey" onclick="clearResponse()" title="Clear your response">CLEAR</button>
+      <button class="btn-orange" onclick="saveAndMark()" title="Save answer and mark for review">SAVE &amp; MARK FOR REVIEW</button>
+      <button class="btn-blue" onclick="markAndNext()" title="Mark for review without saving">MARK FOR REVIEW &amp; NEXT</button>
     </div>
     <div class="bottom-row2">
       <button class="btn-nav" onclick="prevQ()">&lt;&lt; BACK</button>
@@ -303,7 +442,7 @@
 </div>
 
 <!-- ==================================================================
-     SCREEN 6: RESULT
+     SCREEN 7: RESULT
      ================================================================== -->
 <div id="resultScreen" class="screen">
 
@@ -341,7 +480,7 @@
     </div>
 
     <h3>Subject-wise Breakdown</h3>
-    <table class="result-table" id="resultTable">
+    <table class="result-table">
       <thead>
         <tr>
           <th>Subject</th>
@@ -352,7 +491,7 @@
         </tr>
       </thead>
       <tbody id="resultTableBody">
-        <!-- JS se fill hoga -->
+        <!-- JS fills -->
       </tbody>
     </table>
 
@@ -366,7 +505,7 @@
 <div id="submitPopup" class="popup">
   <div class="popup-content">
     <h3>Confirm Submission</h3>
-    <p id="submitMsg"></p>
+    <div id="submitMsg"></div>
     <div class="popup-actions">
       <button class="btn-grey" onclick="closePopup()">Cancel</button>
       <button class="btn-green" onclick="finalSubmit()">Yes, Submit</button>
@@ -375,21 +514,24 @@
 </div>
 
 <!-- ==================================================================
-     POPUP: GENERAL ALERT / INFO
+     POPUP: GENERAL INFO / WARNING
      ================================================================== -->
 <div id="infoPopup" class="popup">
   <div class="popup-content">
     <h3 id="infoTitle">Info</h3>
-    <p id="infoMsg"></p>
+    <div id="infoMsg"></div>
     <div class="popup-actions">
       <button class="btn-green" onclick="closeInfoPopup()">OK</button>
     </div>
   </div>
 </div>
 
+<!-- ==================================================================
+     SCRIPTS — Load order matters!
+     ================================================================== -->
+<script src="js/storage.js"></script>
 <script src="js/pdfUpload.js"></script>
 <script src="js/crop.js"></script>
-<script src="js/storage.js"></script>
 <script src="js/review.js"></script>
 <script src="js/cbt.js"></script>
 <script src="js/app.js"></script>
