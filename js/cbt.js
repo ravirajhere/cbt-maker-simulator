@@ -1,0 +1,678 @@
+/* ==================================================================
+   JEE CBT MAKER — CBT Test Engine
+   Sections, palette, timer, keypad, submit, result
+   ================================================================== */
+
+/* ============ CBT STATE ============ */
+const CBTState = {
+  testName: 'JEE Main Practice',
+  duration: 180 * 60,      // seconds
+  timeLeft: 180 * 60,
+  timerInterval: null,
+  warned30: false,
+
+  // Section-wise question sets
+  sections: {
+    Physics: [],
+    Chemistry: [],
+    Mathematics: []
+  },
+
+  currentSubject: 'Physics',
+  currentIdx: 0,
+
+  isActive: false
+};
+
+/* ==================================================================
+   START CBT — Called from config screen
+   ================================================================== */
+function startCBT() {
+  // Get config
+  const testName = (document.getElementById('configTestName')?.value || '').trim() || 'JEE Main Practice';
+  const durationMin = parseInt(document.getElementById('configDuration')?.value) || 180;
+
+  // Validate answers are set
+  const validation = validateAllAnswers();
+  if (!validation.valid) {
+    showInfoPopup(
+      `${validation.missing} question(s) ka answer set nahi hua.<br><br>${validation.details.slice(0, 5).join('<br>')}${validation.details.length > 5 ? '<br>...' : ''}`,
+      'Incomplete'
+    );
+    return;
+  }
+
+  // Build sections from crops
+  CBTState.sections = { Physics: [], Chemistry: [], Mathematics: [] };
+
+  AppState.crops.forEach(crop => {
+    const subj = crop.subject;
+    if (!CBTState.sections[subj]) CBTState.sections[subj] = [];
+
+    CBTState.sections[subj].push({
+      id: crop.id,
+      imageData: crop.imageData,
+      type: crop.section === 'MCQ' ? 'mcq' : 'numerical',
+      correct: crop.answer,
+      qNumber: crop.qNumber,
+      status: 'not-visited',
+      userAnswer: null
+    });
+  });
+
+  // Sort each section: MCQ first (by qNumber), then Numerical
+  Object.keys(CBTState.sections).forEach(subj => {
+    CBTState.sections[subj].sort((a, b) => {
+      if (a.type !== b.type) return a.type === 'mcq' ? -1 : 1;
+      return a.qNumber - b.qNumber;
+    });
+  });
+
+  // Check total questions
+  const total = Object.values(CBTState.sections).reduce((s, arr) => s + arr.length, 0);
+  if (total === 0) {
+    showInfoPopup('Koi question nahi hai test ke liye.', 'Empty');
+    return;
+  }
+
+  // Set state
+  CBTState.testName = testName;
+  CBTState.duration = durationMin * 60;
+  CBTState.timeLeft = durationMin * 60;
+  CBTState.warned30 = false;
+  CBTState.isActive = true;
+
+  // Find first non-empty subject
+  CBTState.currentSubject = Object.keys(CBTState.sections).find(
+    s => CBTState.sections[s].length > 0
+  ) || 'Physics';
+  CBTState.currentIdx = 0;
+
+  // Update UI
+  const nameEl = document.getElementById('cbtTestName');
+  if (nameEl) nameEl.textContent = testName;
+
+  // Switch to test screen
+  showScreen('testScreen');
+
+  // Update section tabs (show only non-empty subjects)
+  renderSectionTabs();
+
+  // Render first question
+  renderCBTQuestion();
+
+  // Start timer
+  startCBTTimer();
+
+  console.log(`🚀 CBT started: ${testName} · ${total} questions · ${durationMin} min`);
+}
+
+/* ==================================================================
+   RENDER SECTION TABS
+   ================================================================== */
+function renderSectionTabs() {
+  const bar = document.querySelector('.section-tabs-bar');
+  if (!bar) return;
+
+  const subjects = ['Physics', 'Chemistry', 'Mathematics'];
+  bar.innerHTML = '';
+
+  subjects.forEach(subj => {
+    const count = CBTState.sections[subj]?.length || 0;
+    if (count === 0) return;   // skip empty sections
+
+    const btn = document.createElement('button');
+    btn.className = 'section-tab' + (subj === CBTState.currentSubject ? ' active' : '');
+    btn.textContent = `${subj} (${count})`;
+    btn.dataset.subject = subj;
+    btn.addEventListener('click', () => switchSubject(subj));
+    bar.appendChild(btn);
+  });
+}
+
+/* ==================================================================
+   SWITCH SUBJECT
+   ================================================================== */
+function switchSubject(subject) {
+  if (subject === CBTState.currentSubject) return;
+  if (!CBTState.sections[subject] || CBTState.sections[subject].length === 0) return;
+
+  CBTState.currentSubject = subject;
+  CBTState.currentIdx = 0;
+
+  // Update tabs
+  document.querySelectorAll('.section-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.subject === subject);
+  });
+
+  renderCBTQuestion();
+  renderCBTPalette();
+
+  console.log(`📑 Switched to ${subject}`);
+}
+
+/* ==================================================================
+   RENDER CURRENT QUESTION
+   ================================================================== */
+function renderCBTQuestion() {
+  const questions = CBTState.sections[CBTState.currentSubject];
+  if (!questions || questions.length === 0) {
+    showInfoPopup('Is section mein koi question nahi hai.', 'Empty');
+    return;
+  }
+
+  const q = questions[CBTState.currentIdx];
+  if (!q) return;
+
+  // Mark as visited
+  if (q.status === 'not-visited') q.status = 'not-answered';
+
+  // Header info
+  const qNumEl = document.getElementById('qNumber');
+  const qTotalEl = document.getElementById('qTotal');
+  if (qNumEl) qNumEl.textContent = q.qNumber;
+  if (qTotalEl) qTotalEl.textContent = questions.length;
+
+  const qTypeBadge = document.getElementById('qTypeBadge');
+  if (qTypeBadge) {
+    qTypeBadge.textContent = q.type === 'mcq' ? 'MCQ' : 'Numerical';
+  }
+
+  // Question image
+  const img = document.getElementById('questionImage');
+  if (img) {
+    img.src = q.imageData;
+    img.alt = `Question ${q.qNumber}`;
+  }
+
+  // Options / Keypad
+  const optionsList = document.getElementById('optionsList');
+  const keypadWrap = document.getElementById('keypadWrap');
+
+  if (q.type === 'mcq') {
+    if (optionsList) optionsList.style.display = 'flex';
+    if (keypadWrap) keypadWrap.style.display = 'none';
+    renderMCQOptions(q);
+  } else {
+    if (optionsList) optionsList.style.display = 'none';
+    if (keypadWrap) keypadWrap.style.display = 'block';
+
+    const numInput = document.getElementById('numInput');
+    if (numInput) numInput.value = q.userAnswer || '';
+  }
+
+  renderCBTPalette();
+}
+
+/* ==================================================================
+   RENDER MCQ OPTIONS
+   ================================================================== */
+function renderMCQOptions(q) {
+  const list = document.getElementById('optionsList');
+  if (!list) return;
+
+  list.innerHTML = '';
+
+  for (let i = 1; i <= 4; i++) {
+    const row = document.createElement('div');
+    row.className = 'option-row' + (q.userAnswer === i ? ' selected' : '');
+    row.innerHTML = `
+      <span class="opt-num">${i}.</span>
+      <span>Option ${i}</span>
+    `;
+    row.addEventListener('click', () => selectCBTOption(i));
+    list.appendChild(row);
+  }
+}
+
+function selectCBTOption(optionNum) {
+  const questions = CBTState.sections[CBTState.currentSubject];
+  const q = questions[CBTState.currentIdx];
+  if (!q) return;
+
+  q.userAnswer = optionNum;
+  renderCBTQuestion();
+}
+
+/* ==================================================================
+   KEYPAD HANDLERS (numerical)
+   ================================================================== */
+function keypad(val) {
+  const input = document.getElementById('numInput');
+  if (!input) return;
+
+  let current = input.value;
+
+  if (val === '-' && current.length > 0) return;
+  if (val === '.' && current.includes('.')) return;
+
+  input.value = current + val;
+}
+
+function backspace() {
+  const input = document.getElementById('numInput');
+  if (!input) return;
+  input.value = input.value.slice(0, -1);
+}
+
+function clearNum() {
+  const input = document.getElementById('numInput');
+  if (!input) return;
+  input.value = '';
+}
+
+/* ==================================================================
+   RENDER PALETTE (current section only)
+   ================================================================== */
+function renderCBTPalette() {
+  const grid = document.getElementById('paletteGrid');
+  if (!grid) return;
+
+  const questions = CBTState.sections[CBTState.currentSubject] || [];
+
+  grid.innerHTML = '';
+
+  const counts = {
+    'not-visited': 0,
+    'not-answered': 0,
+    'answered': 0,
+    'marked': 0,
+    'answered-marked': 0
+  };
+
+  questions.forEach((q, i) => {
+    counts[q.status] = (counts[q.status] || 0) + 1;
+
+    const btn = document.createElement('button');
+    btn.className = 'pal-btn ' + q.status + (i === CBTState.currentIdx ? ' current' : '');
+    btn.textContent = String(i + 1).padStart(2, '0');
+    btn.title = `Q${q.qNumber} · ${q.type === 'mcq' ? 'MCQ' : 'Numerical'}`;
+    btn.addEventListener('click', () => jumpToCBTQuestion(i));
+    grid.appendChild(btn);
+  });
+
+  // Update legend counts
+  setElText('cntNotVisited', counts['not-visited']);
+  setElText('cntNotAnswered', counts['not-answered']);
+  setElText('cntAnswered', counts['answered']);
+  setElText('cntMarked', counts['marked']);
+  setElText('cntMarkedAns', counts['answered-marked']);
+}
+
+function setElText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+
+/* ==================================================================
+   NAVIGATION ACTIONS
+   ================================================================== */
+function saveAndNext() {
+  const q = getCurrentQuestion();
+  if (!q) return;
+
+  syncNumericalInput(q);
+
+  if (q.userAnswer !== null && q.userAnswer !== undefined && q.userAnswer !== '') {
+    q.status = 'answered';
+  } else {
+    q.status = 'not-answered';
+  }
+
+  goToNextQuestion();
+}
+
+function saveAndMark() {
+  const q = getCurrentQuestion();
+  if (!q) return;
+
+  syncNumericalInput(q);
+
+  q.status = (q.userAnswer !== null && q.userAnswer !== undefined && q.userAnswer !== '')
+    ? 'answered-marked'
+    : 'marked';
+
+  goToNextQuestion();
+}
+
+function markAndNext() {
+  const q = getCurrentQuestion();
+  if (!q) return;
+
+  syncNumericalInput(q);
+
+  q.status = (q.userAnswer !== null && q.userAnswer !== undefined && q.userAnswer !== '')
+    ? 'answered-marked'
+    : 'marked';
+
+  goToNextQuestion();
+}
+
+function clearResponse() {
+  const q = getCurrentQuestion();
+  if (!q) return;
+
+  q.userAnswer = null;
+  q.status = 'not-answered';
+
+  const numInput = document.getElementById('numInput');
+  if (numInput) numInput.value = '';
+
+  renderCBTQuestion();
+}
+
+function prevQ() {
+  if (CBTState.currentIdx > 0) {
+    CBTState.currentIdx--;
+    renderCBTQuestion();
+  }
+}
+
+function nextQ() {
+  const questions = CBTState.sections[CBTState.currentSubject];
+  if (CBTState.currentIdx < questions.length - 1) {
+    CBTState.currentIdx++;
+    renderCBTQuestion();
+  }
+}
+
+function goToNextQuestion() {
+  const questions = CBTState.sections[CBTState.currentSubject];
+
+  if (CBTState.currentIdx < questions.length - 1) {
+    CBTState.currentIdx++;
+    renderCBTQuestion();
+  } else {
+    // Last question in current section — try next section
+    const subjects = ['Physics', 'Chemistry', 'Mathematics'];
+    const currentSubjIdx = subjects.indexOf(CBTState.currentSubject);
+    let nextSubj = null;
+
+    for (let i = currentSubjIdx + 1; i < subjects.length; i++) {
+      if (CBTState.sections[subjects[i]]?.length > 0) {
+        nextSubj = subjects[i];
+        break;
+      }
+    }
+
+    if (nextSubj) {
+      switchSubject(nextSubj);
+      showQuickToast(`Moved to ${nextSubj} 📑`);
+    } else {
+      renderCBTPalette();
+      showQuickToast('Last question of last section ✅');
+    }
+  }
+}
+
+function jumpToCBTQuestion(idx) {
+  CBTState.currentIdx = idx;
+  renderCBTQuestion();
+}
+
+/* ==================================================================
+   HELPERS
+   ================================================================== */
+function getCurrentQuestion() {
+  const questions = CBTState.sections[CBTState.currentSubject];
+  if (!questions || questions.length === 0) return null;
+  return questions[CBTState.currentIdx];
+}
+
+function syncNumericalInput(q) {
+  if (q.type === 'numerical') {
+    const input = document.getElementById('numInput');
+    if (input) {
+      q.userAnswer = input.value.trim() || null;
+    }
+  }
+}
+
+/* ==================================================================
+   TIMER
+   ================================================================== */
+function startCBTTimer() {
+  clearInterval(CBTState.timerInterval);
+  updateCBTTimerDisplay();
+
+  CBTState.timerInterval = setInterval(() => {
+    CBTState.timeLeft--;
+
+    if (CBTState.timeLeft <= 0) {
+      clearInterval(CBTState.timerInterval);
+      autoSubmitCBT();
+      return;
+    }
+
+    // 30 min warning
+    if (CBTState.timeLeft === 30 * 60 && !CBTState.warned30) {
+      CBTState.warned30 = true;
+      showInfoPopup('⚠️ <strong>30 minutes remaining!</strong><br>Review your answers.', 'Time Warning');
+    }
+
+    // 5 min warning
+    if (CBTState.timeLeft === 5 * 60) {
+      showInfoPopup('⚠️ <strong>5 minutes remaining!</strong><br>Please prepare to submit.', 'Time Warning');
+    }
+
+    updateCBTTimerDisplay();
+  }, 1000);
+}
+
+function updateCBTTimerDisplay() {
+  const h = String(Math.floor(CBTState.timeLeft / 3600)).padStart(2, '0');
+  const m = String(Math.floor((CBTState.timeLeft % 3600) / 60)).padStart(2, '0');
+  const s = String(CBTState.timeLeft % 60).padStart(2, '0');
+
+  const el = document.getElementById('timerDisplay');
+  if (el) {
+    el.textContent = `${h}:${m}:${s}`;
+
+    // Visual warning when time is low
+    if (CBTState.timeLeft <= 5 * 60) {
+      el.style.background = '#c62828';
+    } else if (CBTState.timeLeft <= 30 * 60) {
+      el.style.background = '#e65100';
+    } else {
+      el.style.background = '#0b4a8f';
+    }
+  }
+}
+
+function autoSubmitCBT() {
+  showInfoPopup('Time is up! Test auto-submitted.', 'Time Over');
+  finalSubmit();
+}
+
+/* ==================================================================
+   SUBMIT FLOW
+   ================================================================== */
+function confirmSubmit() {
+  // Count unattempted across all sections
+  let total = 0;
+  let unattempted = 0;
+
+  Object.values(CBTState.sections).forEach(arr => {
+    arr.forEach(q => {
+      total++;
+      if (q.status === 'not-answered' || q.status === 'not-visited') {
+        unattempted++;
+      }
+    });
+  });
+
+  const answered = total - unattempted;
+
+  showSubmitPopup(`
+    <div style="text-align:left;line-height:1.9;">
+      <div><strong>Total:</strong> ${total}</div>
+      <div><strong>Answered:</strong> ${answered}</div>
+      <div><strong>Not Answered:</strong> ${unattempted}</div>
+    </div>
+    <p style="margin-top:14px;">Are you sure you want to submit?</p>
+  `);
+}
+
+function finalSubmit() {
+  clearInterval(CBTState.timerInterval);
+  CBTState.isActive = false;
+  closePopup();
+
+  // Calculate result
+  const result = calculateCBTResult();
+
+  // Render result screen
+  renderCBTResult(result);
+
+  // Show result screen
+  showScreen('resultScreen');
+
+  console.log('📊 Result:', result);
+}
+
+/* ==================================================================
+   RESULT CALCULATION
+   ================================================================== */
+function calculateCBTResult() {
+  const subjectWise = {};
+  let totalScore = 0, totalCorrect = 0, totalWrong = 0, totalSkipped = 0;
+
+  Object.keys(CBTState.sections).forEach(subj => {
+    const arr = CBTState.sections[subj];
+    let correct = 0, wrong = 0, skipped = 0, score = 0;
+
+    arr.forEach(q => {
+      const answered = (q.status === 'answered' || q.status === 'answered-marked');
+
+      if (!answered) {
+        skipped++;
+        return;
+      }
+
+      const isCorrect = checkCBTAnswer(q);
+
+      if (isCorrect) {
+        correct++;
+        score += 4;
+      } else {
+        wrong++;
+        score -= (q.type === 'mcq' ? 1 : 0);   // Numerical: no negative
+      }
+    });
+
+    subjectWise[subj] = {
+      total: arr.length,
+      correct,
+      wrong,
+      skipped,
+      score
+    };
+
+    totalScore += score;
+    totalCorrect += correct;
+    totalWrong += wrong;
+    totalSkipped += skipped;
+  });
+
+  return {
+    testName: CBTState.testName,
+    totalScore,
+    totalCorrect,
+    totalWrong,
+    totalSkipped,
+    subjectWise,
+    duration: CBTState.duration
+  };
+}
+
+function checkCBTAnswer(q) {
+  if (q.type === 'mcq') {
+    return q.userAnswer === q.correct;
+  } else {
+    // Numerical: string compare with tolerance
+    const userVal = parseFloat(q.userAnswer);
+    const correctVal = parseFloat(q.correct);
+
+    if (isNaN(userVal) || isNaN(correctVal)) {
+      return String(q.userAnswer).trim() === String(q.correct).trim();
+    }
+
+    // Allow small float tolerance
+    return Math.abs(userVal - correctVal) < 0.01;
+  }
+}
+
+/* ==================================================================
+   RENDER RESULT SCREEN
+   ================================================================== */
+function renderCBTResult(result) {
+  const nameEl = document.getElementById('resultTestName');
+  if (nameEl) nameEl.textContent = result.testName;
+
+  setElText('resultTotalScore', result.totalScore);
+  setElText('resultCorrect', result.totalCorrect);
+  setElText('resultWrong', result.totalWrong);
+  setElText('resultSkipped', result.totalSkipped);
+
+  // Subject-wise table
+  const tbody = document.getElementById('resultTableBody');
+  if (!tbody) return;
+
+  tbody.innerHTML = '';
+
+  const subjectOrder = ['Physics', 'Chemistry', 'Mathematics'];
+  subjectOrder.forEach(subj => {
+    const data = result.subjectWise[subj];
+    if (!data || data.total === 0) return;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${subj}</strong></td>
+      <td style="color:#2e7d32;font-weight:600;">${data.correct}</td>
+      <td style="color:#e65100;font-weight:600;">${data.wrong}</td>
+      <td style="color:#888;">${data.skipped}</td>
+      <td style="color:#0b4a8f;font-weight:700;">${data.score}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/* ==================================================================
+   RESTART / EXIT
+   ================================================================== */
+function exitCBT() {
+  if (!confirm('Test se bahar nikalna chahte ho? Progress lost ho jaayega.')) return;
+  clearInterval(CBTState.timerInterval);
+  CBTState.isActive = false;
+  goToHome();
+}
+
+/* ==================================================================
+   KEYBOARD SHORTCUTS (test screen)
+   ================================================================== */
+document.addEventListener('keydown', (e) => {
+  if (AppState.currentScreen !== 'testScreen') return;
+  if (!CBTState.isActive) return;
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+
+  switch (e.key) {
+    case 'ArrowRight':
+      nextQ();
+      break;
+    case 'ArrowLeft':
+      prevQ();
+      break;
+    case '1':
+    case '2':
+    case '3':
+    case '4':
+      // Quick MCQ option select
+      if (e.altKey) {
+        const q = getCurrentQuestion();
+        if (q && q.type === 'mcq') selectCBTOption(parseInt(e.key));
+      }
+      break;
+  }
+});
+
+console.log('🎯 cbt.js loaded');
