@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JEE Main CBT Simulator</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+</head>
+<body>
+
+<!-- ================= SCREEN 1: LOGIN ================= -->
+<div id="loginScreen" class="screen active">
+  <div class="login-box">
+    <h2>JEE (Main) Computer Based Test</h2>
+    <div class="candidate-info">
+      <div class="photo-placeholder">📷</div>
+      <div>
+        <p><strong>Candidate Name:</strong> <span id="loginName">Demo Student</span></p>
+        <p><strong>Roll Number:</strong> <span id="loginRoll">1234567890</span></p>
+        <p><strong>Subject:</strong> B.E./B.Tech</p>
+      </div>
+    </div>
+    <label>Login ID</label>
+    <input type="text" id="loginId" placeholder="Enter Login ID" />
+    <label>Password</label>
+    <input type="password" id="loginPwd" placeholder="Enter Password" />
+    <button onclick="signIn()" class="btn-primary">Sign In</button>
+  </div>
+</div>
+
+<!-- ================= SCREEN 2: INSTRUCTIONS ================= -->
+<div id="instructionsScreen" class="screen">
+  <div class="instructions-header">
+    <h2>General Instructions</h2>
+    <select id="languageSelect">
+      <option>English</option>
+      <option>हिन्दी</option>
+    </select>
+  </div>
+  <div class="instructions-body" id="instructionsBody">
+    <!-- JS se fill hoga -->
+  </div>
+  <div class="instructions-footer">
+    <label>
+      <input type="checkbox" id="agreeCheck" onchange="toggleReadyBtn()" />
+      I have read and understood the instructions.
+    </label>
+    <button id="readyBtn" class="btn-primary" disabled onclick="startTest()">
+      I am ready to begin
+    </button>
+  </div>
+</div>
+
+<!-- ================= SCREEN 3: TEST ================= -->
+<div id="testScreen" class="screen">
+
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <div class="top-left">
+      <span id="candidateName">Demo Student</span>
+      <span id="candidateRoll"> | Roll: 1234567890</span>
+    </div>
+    <div class="top-center">
+      <div class="section-tabs" id="sectionTabs">
+        <!-- JS se fill -->
+      </div>
+    </div>
+    <div class="top-right">
+      <span class="timer-label">Time Left:</span>
+      <span id="timerDisplay" class="timer">03:00:00</span>
+    </div>
+  </div>
+
+  <!-- Main Body -->
+  <div class="test-body">
+    <!-- Question Area -->
+    <div class="question-area">
+      <div class="question-header">
+        <span>Question No. <span id="qNumber">1</span></span>
+        <span id="qTypeBadge" class="badge">MCQ</span>
+      </div>
+      <div class="question-text" id="questionText"></div>
+
+      <div class="options-container" id="optionsContainer"></div>
+
+      <!-- Numerical Keypad -->
+      <div class="keypad-container" id="keypadContainer" style="display:none;">
+        <div class="keypad-display">
+          <input type="text" id="numericInput" readonly />
+        </div>
+        <div class="keypad-grid">
+          <button onclick="keypadPress('1')">1</button>
+          <button onclick="keypadPress('2')">2</button>
+          <button onclick="keypadPress('3')">3</button>
+          <button onclick="keypadPress('4')">4</button>
+          <button onclick="keypadPress('5')">5</button>
+          <button onclick="keypadPress('6')">6</button>
+          <button onclick="keypadPress('7')">7</button>
+          <button onclick="keypadPress('8')">8</button>
+          <button onclick="keypadPress('9')">9</button>
+          <button onclick="keypadPress('0')">0</button>
+          <button onclick="keypadPress('-')">−</button>
+          <button onclick="keypadPress('.')">.</button>
+          <button onclick="keypadBackspace()">⌫</button>
+          <button onclick="keypadClear()">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Question Palette -->
+    <div class="palette-area">
+      <div class="palette-header">
+        <span>Question Palette</span>
+        <button class="collapse-btn" onclick="togglePalette()">◀</button>
+      </div>
+      <div class="palette-legend" id="paletteLegend">
+        <!-- Legend items -->
+      </div>
+      <div class="palette-grid" id="paletteGrid">
+        <!-- JS se fill -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Bar -->
+  <div class="bottom-bar">
+    <div class="bottom-left">
+      <button class="btn-nav" onclick="prevQuestion()">◀ Previous</button>
+    </div>
+    <div class="bottom-center">
+      <button class="btn-secondary" onclick="clearResponse()">Clear Response</button>
+      <button class="btn-secondary" onclick="markForReviewNext()">Mark for Review & Next</button>
+      <button class="btn-primary" onclick="saveAndNext()">Save & Next</button>
+    </div>
+    <div class="bottom-right">
+      <button class="btn-submit" onclick="confirmSubmit()">Submit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= SCREEN 4: SUBMIT SUMMARY ================= -->
+<div id="submitScreen" class="screen">
+  <div class="submit-box">
+    <h2>Submission Summary</h2>
+    <table class="summary-table" id="summaryTable"></table>
+    <div class="submit-actions">
+      <button class="btn-secondary" onclick="backToTest()">Back to Test</button>
+      <button class="btn-primary" onclick="finalSubmit()">Yes, Submit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= SCREEN 5: RESULT ================= -->
+<div id="resultScreen" class="screen">
+  <div class="result-box">
+    <h2>Scorecard</h2>
+    <div class="result-summary" id="resultSummary"></div>
+    <table class="result-table" id="resultTable"></table>
+    <button class="btn-primary" onclick="location.reload()">Restart</button>
+  </div>
+</div>
+
+<!-- ================= POPUPS ================= -->
+<div id="warningPopup" class="popup">
+  <div class="popup-content">
+    <h3>⚠️ Warning</h3>
+    <p id="warningMsg"></p>
+    <button onclick="closeWarning()">OK</button>
+  </div>
+</div>
+
+<div id="submitConfirmPopup" class="popup">
+  <div class="popup-content">
+    <h3>Confirm Submission</h3>
+    <p id="submitConfirmMsg"></p>
+    <div class="popup-actions">
+      <button class="btn-secondary" onclick="closeSubmitPopup()">Cancel</button>
+      <button class="btn-primary" onclick="finalSubmit()">Yes, Submit</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/timer.js"></script>
+<script src="js/palette.js"></script>
+<script src="js/keypad.js"></script>
+<script src="js/result.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
