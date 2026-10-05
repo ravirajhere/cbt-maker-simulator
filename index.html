@@ -13,6 +13,7 @@
 
 <!-- ====================== SCREEN 1: LOGIN ====================== -->
 <div id="loginScreen" class="screen active">
+
   <!-- NTA Header -->
   <div class="nta-header">
     <div class="header-left">
@@ -43,9 +44,9 @@
     </div>
     <div class="sys-details">
       <p><strong>System Name :</strong> [C0001]</p>
-      <p class="warn-text">[Contact Invigilator if the Name and Photograph displayed on the screen is not yours]</p>
-      <p><strong>Candidate Name :</strong> [Your Name]</p>
-      <p><strong>Subject Name :</strong> [Practice Paper]</p>
+      <p class="hint-text">Please confirm the Name and Photograph displayed below are yours.</p>
+      <p><strong>Candidate Name :</strong> Demo Student</p>
+      <p><strong>Subject Name :</strong> Practice Paper</p>
     </div>
     <div class="lang-top">
       <select>
@@ -59,20 +60,95 @@
   <div class="login-wrapper">
     <div class="login-card">
       <h3>Login (Demo)</h3>
+      <p class="card-hint">Koi bhi username/password chalega — ye practice mode hai.</p>
+
       <label>Username</label>
       <input type="text" id="loginUser" value="DemoCandidate" />
+
       <label>Password</label>
       <input type="password" id="loginPass" value="********" />
-      <button class="btn-login" onclick="goToInstructions()">LOGIN</button>
-      <p class="login-hint">Click Login To proceed</p>
+
+      <button class="btn-login" onclick="goToPaperSelection()">LOGIN</button>
+      <p class="login-hint">Click Login to proceed</p>
     </div>
   </div>
 
   <div class="nta-footer">© All Rights Reserved - National Testing Agency</div>
 </div>
 
-<!-- ====================== SCREEN 2: INSTRUCTIONS ====================== -->
+<!-- ====================== SCREEN 2: PAPER SELECTION ====================== -->
+<div id="paperSelectScreen" class="screen">
+
+  <div class="nta-header small">
+    <div class="header-left">
+      <div class="logo-mini">Ministry of Education</div>
+    </div>
+    <div class="header-center">
+      <div class="nta-title-small">SELECT YOUR PAPER</div>
+    </div>
+    <div class="header-right">
+      <select class="lang-select">
+        <option>English</option>
+        <option>हिन्दी</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="paper-select-body">
+
+    <!-- Candidate Info -->
+    <div class="cand-info-bar">
+      <div class="cand-photo-mini">👤</div>
+      <div>
+        <p><strong>Candidate Name :</strong> Demo Student</p>
+        <p><strong>Roll Number :</strong> 1234567890</p>
+      </div>
+    </div>
+
+    <!-- Instruction hint -->
+    <div class="friendly-hint">
+      <span class="hint-icon">💡</span>
+      <span>Neeche se koi bhi paper select kar — jis shift ka mock dena chahte ho. Filters se year ya shift chun sakte ho.</span>
+    </div>
+
+    <h3 class="section-title">Available Papers</h3>
+
+    <!-- Filters -->
+    <div class="filter-bar">
+      <div class="filter-item">
+        <label>Year</label>
+        <select id="filterYear" onchange="applyFilters()">
+          <option value="">All Years</option>
+        </select>
+      </div>
+      <div class="filter-item">
+        <label>Session</label>
+        <select id="filterSession" onchange="applyFilters()">
+          <option value="">All Sessions</option>
+        </select>
+      </div>
+      <div class="filter-item">
+        <label>Shift</label>
+        <select id="filterShift" onchange="applyFilters()">
+          <option value="">All Shifts</option>
+        </select>
+      </div>
+      <button class="btn-clear-filters" onclick="clearFilters()">Clear Filters</button>
+    </div>
+
+    <!-- Paper List -->
+    <div class="paper-list" id="paperList">
+      <!-- JS se fill hoga -->
+    </div>
+
+  </div>
+
+  <div class="nta-footer">© All Rights Reserved - National Testing Agency</div>
+</div>
+
+<!-- ====================== SCREEN 3: INSTRUCTIONS ====================== -->
 <div id="instructionsScreen" class="screen">
+
   <div class="nta-header small">
     <div class="header-left">
       <div class="logo-mini">Ministry of Education</div>
@@ -88,10 +164,16 @@
     </div>
   </div>
 
+  <!-- Selected paper banner -->
+  <div class="selected-paper-banner">
+    <span class="banner-icon">📄</span>
+    <span>Selected Paper: <strong id="selectedPaperName">—</strong></span>
+    <button class="btn-change" onclick="showScreen('paperSelectScreen')">Change</button>
+  </div>
+
   <div class="instr-body">
-    <!-- Left: Instructions text -->
     <div class="instr-text" id="instrText">
-      <p style="text-align:center;font-weight:bold;margin-bottom:15px;">Please read the instructions carefully</p>
+      <p class="instr-title">Please read the instructions carefully</p>
 
       <h4>General Instructions:</h4>
       <ol>
@@ -105,10 +187,10 @@
             <div><span class="legend-box purple"></span> You have NOT answered the question, but have marked the question for review.</div>
             <div><span class="legend-box purple-tick"></span> The question(s) "Answered and Marked for Review" will be considered for evaluation.</div>
           </div>
-          <p style="margin-top:8px;font-size:12px;">The Marked for Review status for a question simply indicates that you would like to look at that question again.</p>
+          <p class="small-note">The Marked for Review status for a question simply indicates that you would like to look at that question again.</p>
         </li>
         <li>You can click on your "Profile" image on top right corner of your screen to change the language during the exam for entire question paper.</li>
-        <li>You can click on the "&gt;" arrow which appears to the left of question palette to collapse the question palette thereby maximizing the question window. To view the question palette again, you can click on "&lt;" which appears on the right side of question window.</li>
+        <li>You can click on the "&gt;" arrow which appears to the left of question palette to collapse the question palette thereby maximizing the question window.</li>
         <li>You can click on <span class="blue-circle">⬇</span> to navigate to the bottom and <span class="blue-circle">⬆</span> to navigate to the top of the question area, without scrolling.</li>
       </ol>
 
@@ -139,38 +221,37 @@
 
       <h4>Navigating through sections:</h4>
       <ol start="10">
-        <li>Sections in this question paper are displayed on the top bar of the screen. Questions in a section can be viewed by clicking on the section name. The section you are currently viewing is highlighted.</li>
+        <li>Sections in this question paper are displayed on the top bar of the screen. Questions in a section can be viewed by clicking on the section name.</li>
         <li>After clicking the <strong>Save &amp; Next</strong> button on the last question for a section, you will automatically be taken to the first question of the next section.</li>
-        <li>You can shuffle between sections and questions anytime during the examination as per your convenience only during the time stipulated.</li>
+        <li>You can shuffle between sections and questions anytime during the examination.</li>
         <li>Candidate can view the corresponding section summary as part of the legend that appears in every section above the question palette.</li>
       </ol>
 
       <h4>Instruction for Question:</h4>
       <ol start="15">
         <li>For the correctness of the translation for a particular language, only the English version will be considered as the final version for evaluation purposes.</li>
-        <li>The keyboard attached to the computer, if any, will be disabled during the entire duration of the examination. Depending on the type of question, the answers to questions can either be entered by clicking on the virtual on-screen keyboard (numeric or otherwise) using the computer mouse or by clicking the chosen option(s) using the computer mouse.</li>
-        <li>In case the computer/mouse allotted to any candidate malfunctions during the test, he/she will be immediately allotted another computer system and the time lost due to this will be adjusted in the server so as to give the candidate the full allotted time.</li>
-        <li>The on-screen computer clock counter of every candidate will be set at the server. The countdown timer on the top right side of the computer screen will display the time remaining (in minutes) available for the candidate to complete the examination.</li>
+        <li>The keyboard attached to the computer, if any, will be disabled during the entire duration of the examination.</li>
+        <li>In case the computer/mouse allotted to any candidate malfunctions during the test, he/she will be immediately allotted another computer system.</li>
+        <li>The on-screen computer clock counter of every candidate will be set at the server.</li>
         <li>The Question Palette displayed on the screen will show the status of each question.</li>
         <li>The question(s) "Answered and Marked for Review" status for a question indicates that the candidates would like to have a relook at that question again.</li>
       </ol>
 
       <p><strong>a)</strong> The full paper can be viewed by clicking the "Question Paper" icon on the top right corner of the screen.</p>
-      <p><strong>b)</strong> Blank Sheets for doing Rough Work/ Calculations shall be provided to the candidates. All calculations writing work is to be done only in the Blank Sheets provided at the Centre in the Examination Room/Hall.</p>
+      <p><strong>b)</strong> Blank Sheets for doing Rough Work/ Calculations shall be provided to the candidates.</p>
     </div>
 
-    <!-- Right: Candidate Info -->
     <div class="instr-sidebar">
       <div class="cand-photo">👤</div>
-      <div class="cand-name">RAVI RAJ</div>
+      <div class="cand-name">Demo Student</div>
+      <div class="cand-roll">Roll: 1234567890</div>
     </div>
   </div>
 
-  <!-- Footer: Checkbox + Button -->
   <div class="instr-footer">
     <label class="agree-label">
       <input type="checkbox" id="agreeCheck" onchange="toggleReadyBtn()" />
-      I have read and understood the instructions. All computer hardware allotted to me are in proper working condition. I declare that I am not in possession of / not wearing / not carrying any prohibited gadget like mobile phone, bluetooth devices etc. /any prohibited material with me into the Examination Hall.
+      <span>I have read and understood the instructions. All computer hardware allotted to me are in proper working condition. I declare that I am not in possession of / not wearing / not carrying any prohibited gadget like mobile phone, bluetooth devices etc. / any prohibited material with me into the Examination Hall.</span>
     </label>
     <button id="readyBtn" class="btn-ready" disabled onclick="startTest()">I am ready to begin</button>
   </div>
@@ -178,15 +259,16 @@
   <div class="nta-footer">© All Rights Reserved - National Testing Agency</div>
 </div>
 
-<!-- ====================== SCREEN 3: TEST ====================== -->
+<!-- ====================== SCREEN 4: TEST ====================== -->
 <div id="testScreen" class="screen">
+
   <!-- Top Info Bar -->
   <div class="test-info-bar">
     <div class="info-photo">👤</div>
     <div class="info-text">
-      <p><strong>Candidate Name :</strong> <span id="candName">RAVI RAJ</span></p>
+      <p><strong>Candidate Name :</strong> Demo Student</p>
       <p><strong>Exam Name :</strong> JEE-Main</p>
-      <p><strong>Subject Name :</strong> 40503615_BTECH 7th Jan 2020 Shift 2</p>
+      <p><strong>Subject Name :</strong> <span id="paperInfoBar">—</span></p>
       <p><strong>Remaining Time :</strong> <span id="timerDisplay" class="timer-badge">03:00:00</span></p>
     </div>
     <div class="lang-top">
@@ -206,11 +288,11 @@
       </div>
       <div class="q-text" id="questionText"></div>
 
-      <!-- Options -->
       <div class="options-list" id="optionsList"></div>
 
       <!-- Numerical Keypad -->
       <div class="keypad-wrap" id="keypadWrap" style="display:none;">
+        <p class="keypad-hint">Use the on-screen keypad to enter your answer:</p>
         <input type="text" id="numInput" readonly />
         <div class="keypad">
           <button onclick="keypad('1')">1</button>
@@ -233,12 +315,13 @@
 
     <!-- Palette -->
     <div class="palette-panel">
+      <div class="palette-panel-title">Question Palette</div>
       <div class="palette-legend-row">
         <div><span class="lg-box grey" id="cntNotVisited">0</span> Not Visited</div>
         <div><span class="lg-box orange" id="cntNotAnswered">0</span> Not Answered</div>
         <div><span class="lg-box green" id="cntAnswered">0</span> Answered</div>
         <div><span class="lg-box purple" id="cntMarked">0</span> Marked for Review</div>
-        <div><span class="lg-box purple-tick" id="cntMarkedAns">0</span> Answered &amp; Marked for Review</div>
+        <div><span class="lg-box purple-tick" id="cntMarkedAns">0</span> Answered &amp; Marked</div>
       </div>
       <div class="palette-grid" id="paletteGrid"></div>
     </div>
@@ -247,10 +330,10 @@
   <!-- Bottom Nav -->
   <div class="test-bottom">
     <div class="bottom-row1">
-      <button class="btn-green" onclick="saveAndNext()">SAVE &amp; NEXT</button>
-      <button class="btn-grey" onclick="clearResponse()">CLEAR</button>
-      <button class="btn-orange" onclick="saveAndMark()">SAVE &amp; MARK FOR REVIEW</button>
-      <button class="btn-blue" onclick="markAndNext()">MARK FOR REVIEW &amp; NEXT</button>
+      <button class="btn-green" onclick="saveAndNext()" title="Save answer and move to next question">SAVE &amp; NEXT</button>
+      <button class="btn-grey" onclick="clearResponse()" title="Remove selected answer">CLEAR</button>
+      <button class="btn-orange" onclick="saveAndMark()" title="Save answer and mark this question for later review">SAVE &amp; MARK FOR REVIEW</button>
+      <button class="btn-blue" onclick="markAndNext()" title="Mark for review without saving">MARK FOR REVIEW &amp; NEXT</button>
     </div>
     <div class="bottom-row2">
       <button class="btn-nav" onclick="prevQ()">&lt;&lt; BACK</button>
